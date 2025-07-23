@@ -1,3 +1,19 @@
+
+
+# Financial Data Pipeline �
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/josetraderx/financial-data-pipeline/main)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/josetraderx/financial-data-pipeline/blob/main/notebooks/exodus_demo.ipynb)
+
+A modular, enterprise-grade ETL pipeline for financial market data. Supports extraction, transformation, validation, and storage from multiple sources (crypto, equities, derivatives) with advanced analytics and database integration.
+
+## 🌐 Try it Online
+**No installation required!** You can run the demo notebook directly in your browser:
+
+- **📊 Interactive Demo**: Click the Binder badge above to launch a full Python environment with example notebooks
+- **🚀 Quick Start**: Use the Colab badge for a guided experience with the `notebooks/exodus_demo.ipynb` notebook
+
 # Exodus v2025 Data Module
 
 ## Table of Contents
