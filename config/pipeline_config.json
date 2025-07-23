@@ -1,0 +1,20 @@
+{
+  "pipeline": "crypto",
+  "data_dir": "data/processed",
+  "pipeline_config": {
+    "provider": "bybit",
+    "symbol": "BTCUSDT",
+    "timeframe": "D",
+    "start_date": "2024-01-01",
+    "end_date": "2025-01-01",
+    "save_files": true,
+    "store_db": false,
+    "store_postgresql": true,
+    "splits": {
+      "train_test_split": {
+        "test_size": 0.25,
+        "method": "chronological"
+      }
+    }
+  }
+} 

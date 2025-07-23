@@ -1,0 +1,21 @@
+# Ignore data folders
+/data/
+/data/raw/
+/data/processed/
+
+# Ignore logs
+/logs/
+
+# Ignore Python cache and test cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Ignore virtual environments
+.venv/
+venv/
+env/
+
+# Ignore Jupyter notebook checkpoints
+**/.ipynb_checkpoints/ 

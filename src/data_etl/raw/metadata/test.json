@@ -1,0 +1,10 @@
+{
+    "symbol": "BTCUSDT",
+    "interval": "1m",
+    "csv_file": "test.csv",
+    "num_records": 1,
+    "hash_sha256": "3f966b68ae6ed9fba4c5193f2b8d082bb71735fd4dcaaf0cdc9fc46fdaf67607",
+    "created_at": "2025-07-06T03:09:24.822297Z",
+    "exodus_version": "v2025",
+    "script_version": "1.0.0"
+}
