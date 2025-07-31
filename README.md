@@ -17,7 +17,7 @@ A modular, enterprise-grade ETL pipeline for financial market data. Supports ext
 6. Configuration
 7. Data Validation
 8. Data Storage
-9. Data Splitting
+# Financial Data Pipeline
 10. Monitoring and Quality Assurance
 11. Error Handling
 12. Performance Optimization
@@ -51,10 +51,6 @@ Exodus v2025 is a professional and modular ETL pipeline for financial data (cryp
    poetry install
    ```
    Or with pip:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Set up environment variables as described in the [Configuration](#configuration) section.
 
 ## Architecture
 
