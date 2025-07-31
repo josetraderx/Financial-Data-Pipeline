@@ -13,7 +13,9 @@ from pathlib import Path
 
 from data_etl.providers.crypto.bybit_downloader import BybitDownloader
 from data_etl.processing.enhanced_metadata_manager import EnhancedMetadataManager
-from data_etl.validation.simple_validator import SimpleDataValidator
+from data_etl.processing.data_cleaner import EnhancedDataValidator
+from data_etl.processing.data_normalizer import DataNormalizer
+from data_etl.processing.timeframe_aggregator import TimeframeAggregator
 from data_etl.processing.data_splitter import DataSplitter
 from data_etl.storage.timeseries_db import TimeSeriesDB
 from data_etl.storage.metadata_db import MetadataDB
@@ -46,7 +48,9 @@ class CryptoPipeline:
         
         # Initialize components
         self.metadata_manager = EnhancedMetadataManager(self.data_dir)
-        self.validator = SimpleDataValidator(config.get('validation_config', {}))
+        self.validator = EnhancedDataValidator()
+        self.normalizer = DataNormalizer()
+        self.aggregator = TimeframeAggregator()
         self.splitter = DataSplitter()
         
         # Database connections
@@ -145,32 +149,48 @@ class CryptoPipeline:
             logger.error(f"Error downloading data from {provider}: {e}")
             return None
     
-    def validate_data(self, data: pd.DataFrame, symbol: str) -> Dict[str, Any]:
+    def process_data(self, data: pd.DataFrame, symbol: str, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validate and clean data.
-        
+        Procesa los datos: limpieza, normalización y agregación (según config).
         Args:
             data: Raw data DataFrame
             symbol: Trading symbol
-            
+            pipeline_config: Configuración del pipeline
         Returns:
-            Validation result with cleaned data and report
+            dict con 'data', 'report', 'is_valid'
         """
         try:
-            # Validate and clean data
+            # Limpieza y validación avanzada
             cleaned_data, report = self.validator.validate_and_clean(data)
-            
-            logger.info(f"Data validation completed for {symbol}")
-            logger.info(f"Valid records: {report['valid_records']}/{report['total_records']}")
-            
+            logger.info(f"Data cleaning/validation completed for {symbol}")
+            logger.info(f"Valid records: {report.get('valid_records', 'N/A')}/{report.get('total_records', 'N/A')}")
+
+            # Normalización (opcional)
+            norm_cfg = pipeline_config.get('normalize', True)
+            if norm_cfg:
+                method = pipeline_config.get('normalize_method', 'zscore')
+                cleaned_data = self.normalizer.normalize_ohlcv(cleaned_data, method=method)
+                logger.info(f"Data normalized using method: {method}")
+
+            # Agregación de timeframe (opcional)
+            agg_cfg = pipeline_config.get('aggregate', True)
+            if agg_cfg:
+                target_timeframe = pipeline_config.get('aggregate_timeframe', pipeline_config.get('timeframe'))
+                freq = self.aggregator.validate_timeframe(target_timeframe)
+                # Asegurarse que el índice sea datetime
+                if 'timestamp' in cleaned_data.columns:
+                    cleaned_data['timestamp'] = pd.to_datetime(cleaned_data['timestamp'], unit='s')
+                    cleaned_data = cleaned_data.set_index('timestamp')
+                cleaned_data = self.aggregator.aggregate_ohlcv(cleaned_data, freq)
+                logger.info(f"Data aggregated to timeframe: {target_timeframe}")
+
             return {
                 'data': cleaned_data,
                 'report': report,
-                'is_valid': report['is_valid']
+                'is_valid': report.get('is_valid', True)
             }
-            
         except Exception as e:
-            logger.error(f"Error validating data: {str(e)}")
+            logger.error(f"Error processing data: {str(e)}")
             return {
                 'data': None,
                 'report': {'is_valid': False, 'errors': [str(e)]},
@@ -298,21 +318,40 @@ class CryptoPipeline:
     
     def run_pipeline(self, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Run the complete data pipeline.
-        
+        Run the complete data pipeline for multiple assets/timeframes if present.
         Args:
             pipeline_config: Pipeline configuration containing:
                 - provider: Data provider
-                - symbol: Trading symbol
-                - timeframe: Timeframe
+                - assets: List of dicts with symbol and timeframe
+                - symbol: Trading symbol (if single)
+                - timeframe: Timeframe (if single)
                 - start_date: Start date
                 - end_date: End date
-                - splits: Split configurations
-                - save_files: Whether to save files
-                - store_db: Whether to store in database
-                
-        Returns:
-            Pipeline execution results
+        """
+        try:
+            # Process multiple assets/timeframes if present in config
+            assets = pipeline_config.get('assets')
+            if assets:
+                all_results = {}
+                for asset in assets:
+                    logger.info(f"--- Processing {asset['symbol']} {asset['timeframe']} ---")
+                    asset_config = pipeline_config.copy()
+                    asset_config['symbol'] = asset['symbol']
+                    asset_config['timeframe'] = asset['timeframe']
+                    # Run the pipeline for each asset/timeframe
+                    result = self.run_pipeline_single(asset_config)
+                    all_results[f"{asset['symbol']}_{asset['timeframe']}"] = result
+                return all_results
+            else:
+                # If no asset list, run pipeline for single asset/timeframe
+                return self.run_pipeline_single(pipeline_config)
+        except Exception as e:
+            logger.error(f"Pipeline failed: {e}")
+            return {'success': False, 'errors': [str(e)]}
+
+    def run_pipeline_single(self, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Run the pipeline for a single asset/timeframe.
         """
         results = {
             'success': False,
@@ -320,20 +359,14 @@ class CryptoPipeline:
             'metadata': {},
             'errors': []
         }
-        
         try:
-            # Initialize databases if storing
             if pipeline_config.get('store_db', False):
                 self._init_databases()
-            
-            # Extract configuration
             provider = pipeline_config['provider']
             symbol = pipeline_config['symbol']
             timeframe = pipeline_config['timeframe']
             start_date = pipeline_config['start_date']
             end_date = pipeline_config['end_date']
-            
-            # Step 1: Download data
             logger.info(f"Starting pipeline for {provider} {symbol} {timeframe}")
             raw_data = self.download_data(provider, symbol, timeframe, start_date, end_date)
             if raw_data is not None:
@@ -345,34 +378,32 @@ class CryptoPipeline:
                 logger.info(f"Downloaded data head:\n{raw_data.head()}\n")
             else:
                 logger.warning("Downloaded data is None.")
-
             if raw_data is None or (hasattr(raw_data, 'empty') and raw_data.empty):
                 results['errors'].append("Failed to download data or data is empty")
                 return results
-            
-            # Step 2: Validate data
-            validation_result = self.validate_data(raw_data, symbol)
-
-            if not validation_result['is_valid']:
-                results['errors'].append("Data validation failed")
-                # Si hay errores detallados, los agrego al log
-                if 'errors' in validation_result['report']:
-                    logger.error(f"Validation errors: {validation_result['report']['errors']}")
-                # Continue with cleaned data even if validation failed
-
-            cleaned_data = validation_result['data']
-            validation_report = validation_result['report']
-            
-            # Step 3: Split data (if configured)
+            process_result = self.process_data(raw_data, symbol, pipeline_config)
+            if not process_result['is_valid']:
+                results['errors'].append("Data cleaning/validation failed")
+                if 'errors' in process_result['report']:
+                    logger.error(f"Validation errors: {process_result['report']['errors']}")
+            cleaned_data = process_result['data']
+            validation_report = process_result['report']
             datasets = {'full': cleaned_data}
-            
+            try:
+                logger.info("Upserting cleaned 'full' dataset into TimescaleDB (PostgreSQL)...")
+                from data_etl.storage.timeseries_db import TimeSeriesDB
+                db_cfg = self.db_config if hasattr(self, 'db_config') else EXAMPLE_CONFIG['db_config']
+                tsdb = TimeSeriesDB(db_cfg)
+                tsdb.connect()
+                tsdb.upsert_ohlcv_data(cleaned_data, table_name="ohlcv_data")
+                tsdb.disconnect()
+                logger.info("✅ Real cleaned data upserted into TimescaleDB (table: ohlcv_data)")
+            except Exception as e:
+                logger.error(f"Failed to upsert cleaned data into TimescaleDB: {e}")
             if pipeline_config.get('splits'):
                 split_datasets = self.split_data(cleaned_data, pipeline_config['splits'])
                 datasets.update(split_datasets)
-            
-            # Step 4: Store data (if configured)
             dataset_ids = {}
-            
             if pipeline_config.get('store_db', False):
                 for dataset_name, dataset_data in datasets.items():
                     metadata = {
@@ -388,41 +419,31 @@ class CryptoPipeline:
                             'pipeline_config': pipeline_config
                         }
                     }
-                    
                     dataset_id = self.store_data(dataset_data, metadata)
                     if dataset_id:
                         dataset_ids[dataset_name] = dataset_id
-                        
-                        # Store validation report for full dataset
                         if dataset_name == 'full':
                             self.store_validation_report(dataset_id, validation_report)
-            
-            # Step 5: Save files (if configured)
             file_paths = {}
-            
             if pipeline_config.get('save_files', False):
                 for dataset_name, dataset_data in datasets.items():
                     filename = f"{symbol}_{timeframe}_{dataset_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
                     file_path = self.save_to_file(dataset_data, filename)
                     file_paths[dataset_name] = file_path
-            
-            # Store metadata using enhanced metadata manager
             metadata_info = {
                 'dataset_name': f"{symbol}_{timeframe}",
                 'provider': provider,
                 'symbol': symbol,
                 'timeframe': timeframe,
-                'start_date': start_date,  # Already a string
-                'end_date': end_date,      # Already a string
+                'start_date': start_date,
+                'end_date': end_date,
                 'total_records': len(cleaned_data),
                 'validation_report': validation_report,
                 'splits': list(datasets.keys()),
                 'file_paths': file_paths,
                 'dataset_ids': dataset_ids
             }
-            
             self.metadata_manager.store_metadata(metadata_info)
-            
             results.update({
                 'success': True,
                 'datasets': {name: len(data) for name, data in datasets.items()},
@@ -431,27 +452,21 @@ class CryptoPipeline:
                 'file_paths': file_paths,
                 'dataset_ids': dataset_ids
             })
-            
-            # Store to PostgreSQL if enabled
             if pipeline_config.get('store_postgresql', False):
                 logger.info("Storing processed data to PostgreSQL...")
                 postgresql_success = False
-                
                 try:
-                    # Find the full dataset file (contains all processed data)
                     full_dataset_path = None
                     for name, path in file_paths.items():
                         if 'full' in name.lower():
                             full_dataset_path = path
                             break
-                    
                     if full_dataset_path:
                         postgresql_success = store_processed_data_to_postgresql(
                             full_dataset_path,
                             DEFAULT_CONNECTION_PARAMS,
                             table_name="market_data_clean"
                         )
-                        
                         if postgresql_success:
                             logger.info("✅ Data successfully stored to PostgreSQL")
                             results['postgresql_storage'] = {'success': True, 'table': 'market_data_clean'}
@@ -461,22 +476,16 @@ class CryptoPipeline:
                     else:
                         logger.warning("No full dataset file found for PostgreSQL storage")
                         results['postgresql_storage'] = {'success': False, 'error': 'No full dataset found'}
-                        
                 except Exception as e:
                     logger.error(f"PostgreSQL storage error: {e}")
                     results['postgresql_storage'] = {'success': False, 'error': str(e)}
-            
             logger.info("Pipeline completed successfully")
-            
         except Exception as e:
             logger.error(f"Pipeline failed: {e}")
             results['errors'].append(str(e))
-            
         finally:
-            # Cleanup
             if pipeline_config.get('store_db', False):
                 self._cleanup_databases()
-        
         return results
     
     def get_pipeline_status(self) -> Dict[str, Any]:
@@ -539,7 +548,8 @@ EXAMPLE_PIPELINE_CONFIG = {
         }
     },
     'save_files': True,
-    'store_db': True
+    'store_db': True,
+    'aggregate': False  # Desactiva la agregación de timeframe
 }
 
 
