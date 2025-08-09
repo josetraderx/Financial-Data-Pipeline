@@ -11,7 +11,7 @@ def get_logger(name: str = "app", level: str = None) -> logging.Logger:
 
     ch = logging.StreamHandler(stream=sys.stdout)
 
-    # Formatter a prueba de fallos: garantiza run_id aunque el filtro no se aplique.
+    # Fail-safe formatter: guarantees run_id even if the filter is not applied.
     class SafeRunIdFormatter(logging.Formatter):
         def format(self, record):
             if not hasattr(record, "run_id"):
