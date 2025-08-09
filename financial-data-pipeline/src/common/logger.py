@@ -26,7 +26,8 @@ def get_logger(name: str = "app", level: str = None) -> logging.Logger:
     logger.addHandler(ch)
     logger.setLevel(level or os.getenv("LOG_LEVEL", "INFO"))
 
-    # Filtro que añade run_id (queda como refuerzo)
+    # Filter that adds run_id (remains as backup)
+
     def add_run_id(record):
         if not hasattr(record, "run_id"):
             record.run_id = os.getenv("RUN_ID", "local")
