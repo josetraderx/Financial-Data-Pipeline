@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import os
-from datetime import datetime, timedelta
 from src.common.logger import get_logger, timed
 
 def run_pipeline(provider: str, symbol: str, timeframe: str, days_back: int, store_db: bool, save_files: bool):
