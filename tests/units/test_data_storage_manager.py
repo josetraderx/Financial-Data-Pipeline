@@ -195,7 +195,6 @@ class TestDataStorageManager:
         
     def test_cleanup_old_backups(self, storage_manager, sample_file, monkeypatch):
         """Test cleaning up old backups."""
-        from datetime import datetime, timedelta
         import time
 
         # Mock time.time() to return a fixed timestamp
