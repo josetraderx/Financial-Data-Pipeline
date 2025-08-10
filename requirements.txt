@@ -6,3 +6,5 @@ sqlalchemy
 pytest
 notebook
 scikit-learn
+pyarrow
+fastparquet
