@@ -1,4 +1,4 @@
-
+[![codecov](https://codecov.io/gh/josetraderx/Financial-Data-Pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/josetraderx/Financial-Data-Pipeline)
 
 # Financial Data Pipeline �
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
