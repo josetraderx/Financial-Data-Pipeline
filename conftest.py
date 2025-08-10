@@ -6,7 +6,6 @@ import pytest
 import pandas as pd
 from datetime import datetime
 import pytz
-from data_etl.storage.timeseries_db import TimeSeriesDB
 from data_etl.pipelines.crypto_pipeline import CryptoPipeline
 
 @pytest.fixture

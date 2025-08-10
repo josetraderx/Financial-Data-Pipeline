@@ -20,4 +20,4 @@ def get_logger(name: str) -> logging.Logger:
         stream_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
         logger.addHandler(stream_handler)
-    return logger 
+    return logger

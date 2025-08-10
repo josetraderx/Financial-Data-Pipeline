@@ -71,7 +71,7 @@ class TestDataStorageManager:
         if not isinstance(sample_data.index, pd.DatetimeIndex):
             sample_data.index = pd.to_datetime(sample_data.index)
             
-        logger.debug(f"Sample data info:")
+        logger.debug("Sample data info:")
         logger.debug(f"Shape: {sample_data.shape}")
         logger.debug(f"Index: {sample_data.index.dtype}")
         logger.debug(f"Date range: {sample_data.index.min()} to {sample_data.index.max()}")
@@ -114,7 +114,7 @@ class TestDataStorageManager:
         # Verify the data was retrieved
         assert not retrieved.empty, "Retrieved data is empty"
         
-        logger.debug(f"Retrieved data info:")
+        logger.debug("Retrieved data info:")
         logger.debug(f"Shape: {retrieved.shape}")
         logger.debug(f"Index: {retrieved.index.dtype}")
         logger.debug(f"Date range: {retrieved.index.min()} to {retrieved.index.max()}")
@@ -195,7 +195,6 @@ class TestDataStorageManager:
         
     def test_cleanup_old_backups(self, storage_manager, sample_file, monkeypatch):
         """Test cleaning up old backups."""
-        from datetime import datetime, timedelta
         import time
 
         # Mock time.time() to return a fixed timestamp

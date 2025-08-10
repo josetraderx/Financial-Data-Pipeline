@@ -5,7 +5,6 @@ Tests for the data processing modules.
 import pytest
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
 from data_etl.processing.data_normalizer import DataNormalizer
 from data_etl.processing.technical_indicators import TechnicalIndicators
 from data_etl.processing.timeframe_aggregator import TimeframeAggregator
