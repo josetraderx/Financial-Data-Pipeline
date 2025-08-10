@@ -39,4 +39,8 @@ jobs:
           black --check . || true
 
       - name: Run tests
-        run: pytest -q
+        run: |
+          # Ensure local packages are importable in CI
+          echo "PWD=$(pwd)"
+          export PYTHONPATH="$PYTHONPATH:$(pwd):$(pwd)/financial-data-pipeline:$(pwd)/src"
+          pytest -q
