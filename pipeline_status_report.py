@@ -166,7 +166,7 @@ def display_pipeline_summary():
         try:
             df = pd.read_parquet(file)
             total_records += len(df)
-        except:
+        except Exception:
             continue
     
     print(f"📊 Total processed files: {total_files}")
