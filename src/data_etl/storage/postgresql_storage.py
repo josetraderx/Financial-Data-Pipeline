@@ -217,7 +217,7 @@ def store_processed_data_to_postgresql(parquet_file_path: str,
             return False
         
         # Insert data
-        stats = storage.insert_market_data(df, symbol, table_name)
+        storage.insert_market_data(df, symbol, table_name)
         
         # Get and log statistics
         table_stats = storage.get_table_stats(symbol, table_name)
