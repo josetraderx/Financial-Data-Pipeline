@@ -20,7 +20,52 @@ dependencies = [
     "pathlib>=1.0.1"
 ]
 
-
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Basic configuration
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Select rules to check
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # Line too long (handled by line-length setting)
+    "B008",  # Do not perform function calls in argument defaults
+    "C901",  # Too complex
+]
+
+# Exclude certain files/directories
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    "notebooks/*.ipynb",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Allow specific ignores for test files
+"test_*.py" = ["F401", "F811"]
+"*test*.py" = ["F401", "F811"]
+
+[tool.ruff.format]
+# Formatting configuration
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
