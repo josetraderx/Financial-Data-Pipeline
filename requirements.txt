@@ -4,5 +4,5 @@ matplotlib
 psycopg2-binary
 sqlalchemy
 pytest
-notebook 
+notebook
 scikit-learn
