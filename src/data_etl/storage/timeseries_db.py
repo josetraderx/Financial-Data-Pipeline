@@ -209,7 +209,7 @@ class TimeSeriesDB:
                     df['timestamp'] = df['timestamp'].dt.tz_convert('UTC')
             
             # Insert data
-            rows_inserted = df.to_sql(
+            df.to_sql(
                 table_name, 
                 self.engine, 
                 if_exists=if_exists, 
