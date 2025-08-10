@@ -39,3 +39,8 @@ jobs:
         run: |
           export PYTHONPATH="$PYTHONPATH:$(pwd):$(pwd)/financial-data-pipeline:$(pwd)/src"
           pytest --cov=. --cov-report=xml --cov-report=term -q
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
