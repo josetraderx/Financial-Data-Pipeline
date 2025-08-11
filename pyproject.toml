@@ -3,7 +3,7 @@ name = "data-etl"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "DataBridge",email = "jose.trader89@hotmail.com"}
+    {name = "DataBridge", email = "jose.trader89@hotmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -45,6 +45,7 @@ select = [
 ignore = [
     "E501",  # Line too long (handled by line-length setting)
     "B008",  # Do not perform function calls in argument defaults
+    "B904",  # Exception chaining (optional best practice)
     "C901",  # Too complex
 ]
 
