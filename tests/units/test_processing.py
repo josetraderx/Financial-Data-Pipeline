@@ -149,7 +149,9 @@ class TestTimeframeAggregator:
         hourly = ta.aggregate_ohlcv(sample_ohlcv_data, "1H")
 
         assert isinstance(hourly, pd.DataFrame)
-        assert all(col in hourly.columns for col in ["open", "high", "low", "close", "volume"])
+        assert all(
+            col in hourly.columns for col in ["open", "high", "low", "close", "volume"]
+        )
         assert len(hourly) < len(sample_ohlcv_data)  # Should be fewer rows
 
         # Verify aggregation logic

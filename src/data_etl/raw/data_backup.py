@@ -53,7 +53,9 @@ class DataBackup:
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
 
-    def create_backup(self, source_path: str | Path, description: str | None = None) -> dict:
+    def create_backup(
+        self, source_path: str | Path, description: str | None = None
+    ) -> dict:
         """
         Create a backup of a data file or directory.
 
@@ -99,7 +101,9 @@ class DataBackup:
 
         return metadata
 
-    def restore_backup(self, timestamp: str, restore_path: str | Path | None = None) -> bool:
+    def restore_backup(
+        self, timestamp: str, restore_path: str | Path | None = None
+    ) -> bool:
         """
         Restore data from a backup.
 
@@ -161,7 +165,9 @@ class DataBackup:
             if start_date or end_date:
                 backup_date = datetime.strptime(timestamp, "%Y%m%d_%H%M%S")
 
-                if start_date and backup_date < datetime.strptime(start_date, "%Y-%m-%d"):
+                if start_date and backup_date < datetime.strptime(
+                    start_date, "%Y-%m-%d"
+                ):
                     continue
                 if end_date and backup_date > datetime.strptime(end_date, "%Y-%m-%d"):
                     continue
@@ -195,7 +201,9 @@ class DataBackup:
 
         return True
 
-    def cleanup_old_backups(self, keep_days: int = 30, minimum_keep: int = 5) -> list[str]:
+    def cleanup_old_backups(
+        self, keep_days: int = 30, minimum_keep: int = 5
+    ) -> list[str]:
         """
         Remove old backups while keeping a minimum number.
 

@@ -62,7 +62,13 @@ class TimeframeAggregator:
             raise ValueError("DataFrame index must be DatetimeIndex")
 
         # Define aggregation functions for OHLCV
-        agg_dict = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+        agg_dict = {
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+        }
 
         # Perform resampling
         resampled = df.resample(freq).agg(agg_dict)
@@ -72,7 +78,9 @@ class TimeframeAggregator:
 
         return resampled
 
-    def resample_timeframe(self, df: pd.DataFrame, target_timeframe: str) -> pd.DataFrame:
+    def resample_timeframe(
+        self, df: pd.DataFrame, target_timeframe: str
+    ) -> pd.DataFrame:
         """
         Resample OHLCV data to target timeframe.
 

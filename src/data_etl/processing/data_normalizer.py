@@ -62,7 +62,9 @@ class DataNormalizer:
                 normalized_df[col] = np.log1p(df[col])
         return normalized_df
 
-    def denormalize_ohlcv(self, df: pd.DataFrame, method: str = "zscore") -> pd.DataFrame:
+    def denormalize_ohlcv(
+        self, df: pd.DataFrame, method: str = "zscore"
+    ) -> pd.DataFrame:
         """
         Denormalize data back to original scale.
 
@@ -74,7 +76,9 @@ class DataNormalizer:
             pd.DataFrame: Denormalized OHLCV data
         """
         if not self.scalers and method != "log":
-            raise ValueError("No scaling parameters found. Did you normalize the data first?")
+            raise ValueError(
+                "No scaling parameters found. Did you normalize the data first?"
+            )
 
         denormalized_df = df.copy()
 

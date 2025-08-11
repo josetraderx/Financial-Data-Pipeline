@@ -30,7 +30,10 @@ class TechnicalIndicators:
 
     @staticmethod
     def macd(
-        data: pd.Series, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9
+        data: pd.Series,
+        fast_period: int = 12,
+        slow_period: int = 26,
+        signal_period: int = 9,
     ) -> pd.DataFrame:
         """Moving Average Convergence Divergence"""
         exp1 = data.ewm(span=fast_period, adjust=False).mean()
@@ -39,10 +42,14 @@ class TechnicalIndicators:
         signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
         histogram = macd_line - signal_line
 
-        return pd.DataFrame({"macd": macd_line, "signal": signal_line, "histogram": histogram})
+        return pd.DataFrame(
+            {"macd": macd_line, "signal": signal_line, "histogram": histogram}
+        )
 
     @staticmethod
-    def bollinger_bands(data: pd.Series, period: int = 20, num_std: float = 2.0) -> pd.DataFrame:
+    def bollinger_bands(
+        data: pd.Series, period: int = 20, num_std: float = 2.0
+    ) -> pd.DataFrame:
         """Bollinger Bands"""
         sma = data.rolling(window=period).mean()
         std = data.rolling(window=period).std()
@@ -52,7 +59,9 @@ class TechnicalIndicators:
         return pd.DataFrame({"middle": sma, "upper": upper_band, "lower": lower_band})
 
     @staticmethod
-    def atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+    def atr(
+        high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14
+    ) -> pd.Series:
         """Average True Range"""
         high_low = high - low
         high_close = (high - close.shift()).abs()
@@ -62,7 +71,9 @@ class TechnicalIndicators:
         return true_range.rolling(window=period).mean()
 
     @staticmethod
-    def volume_profile(price: pd.Series, volume: pd.Series, bins: int = 100) -> pd.DataFrame:
+    def volume_profile(
+        price: pd.Series, volume: pd.Series, bins: int = 100
+    ) -> pd.DataFrame:
         """Volume Profile"""
         hist, bins = np.histogram(price, bins=bins, weights=volume)
         bin_centers = (bins[:-1] + bins[1:]) / 2

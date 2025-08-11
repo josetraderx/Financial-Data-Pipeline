@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
     logger.addHandler(handler)
 
 REQUIRED_OHLCV_COLUMNS = [
@@ -108,7 +110,9 @@ class TimeSeriesDB:
 
             # Verify TimescaleDB extension
             with self.conn.cursor() as cur:
-                cur.execute("SELECT extname FROM pg_extension WHERE extname = 'timescaledb';")
+                cur.execute(
+                    "SELECT extname FROM pg_extension WHERE extname = 'timescaledb';"
+                )
                 if not cur.fetchone():
                     self.logger.warning("TimescaleDB extension not found in database")
                     return False
@@ -184,7 +188,9 @@ class TimeSeriesDB:
                         )
                     )
                     conn.execute(
-                        text(f"SELECT add_compression_policy('{table_name}', INTERVAL '90 days');")
+                        text(
+                            f"SELECT add_compression_policy('{table_name}', INTERVAL '90 days');"
+                        )
                     )
                 except Exception:
                     pass
@@ -228,7 +234,13 @@ class TimeSeriesDB:
                     df["timestamp"] = df["timestamp"].dt.tz_convert("UTC")
 
             # Insert data
-            df.to_sql(table_name, self.engine, if_exists=if_exists, index=False, method="multi")
+            df.to_sql(
+                table_name,
+                self.engine,
+                if_exists=if_exists,
+                index=False,
+                method="multi",
+            )
 
             self.logger.info(f"Inserted {len(df)} rows into {table_name}")
             return True
@@ -298,7 +310,9 @@ class TimeSeriesDB:
             self.logger.error(f"Failed to query data for {symbol}: {e}")
             return pd.DataFrame()
 
-    def get_latest_timestamp(self, symbol: str, table_name: str = "ohlcv_data") -> datetime | None:
+    def get_latest_timestamp(
+        self, symbol: str, table_name: str = "ohlcv_data"
+    ) -> datetime | None:
         """
         Get the latest timestamp for a specific symbol.
         Uses parameters for safety.
@@ -373,14 +387,18 @@ class TimeSeriesDB:
                 "total_volume": float(row[6]) if row[6] else None,
             }
 
-            self.logger.info(f"Retrieved stats for {symbol}: {stats['record_count']} records")
+            self.logger.info(
+                f"Retrieved stats for {symbol}: {stats['record_count']} records"
+            )
             return stats
 
         except Exception as e:
             self.logger.error(f"Failed to get stats for {symbol}: {e}")
             return {}
 
-    def upsert_ohlcv_data(self, df: pd.DataFrame, table_name: str = "ohlcv_data") -> bool:
+    def upsert_ohlcv_data(
+        self, df: pd.DataFrame, table_name: str = "ohlcv_data"
+    ) -> bool:
         """
         Upsert (insert or update) OHLCV data to avoid duplicates.
         """
@@ -392,7 +410,8 @@ class TimeSeriesDB:
         try:
             with self.engine.begin() as conn:
                 for _, row in df.iterrows():
-                    upsert_sql = text(f"""
+                    upsert_sql = text(
+                        f"""
                         INSERT INTO {table_name} (timestamp, symbol, open, high, low, close, volume, hour, day_of_week, month, year)
                         VALUES (:timestamp, :symbol, :open, :high, :low, :close, :volume, :hour, :day_of_week, :month, :year)
                         ON CONFLICT (timestamp, symbol) DO UPDATE SET
@@ -405,7 +424,8 @@ class TimeSeriesDB:
                             day_of_week = EXCLUDED.day_of_week,
                             month = EXCLUDED.month,
                             year = EXCLUDED.year;
-                    """)
+                    """
+                    )
                     conn.execute(upsert_sql, row.to_dict())
             self.logger.info(f"Upserted {len(df)} rows into {table_name}")
             return True

@@ -58,7 +58,9 @@ class DataSplitter:
                 train_size = int(n * (1 - test_size))
                 train = df_sorted.iloc[:train_size]
                 test = df_sorted.iloc[train_size:]
-                logger.info(f"Chronological split: {len(train)} train, {len(test)} test")
+                logger.info(
+                    f"Chronological split: {len(train)} train, {len(test)} test"
+                )
                 return train, test
 
             elif method == "random":
@@ -77,7 +79,9 @@ class DataSplitter:
             logger.error(f"train_test_split failed: {e}")
             return df, pd.DataFrame()
 
-    def split_by_date(self, df: pd.DataFrame, split_date, timestamp_col: str = "timestamp") -> dict:
+    def split_by_date(
+        self, df: pd.DataFrame, split_date, timestamp_col: str = "timestamp"
+    ) -> dict:
         """
         Split data by a specific date.
 
@@ -96,7 +100,9 @@ class DataSplitter:
             before = df[df[timestamp_col] <= pd.to_datetime(split_date)]
             after = df[df[timestamp_col] > pd.to_datetime(split_date)]
 
-            logger.info(f"Date split: {len(before)} before, {len(after)} after {split_date}")
+            logger.info(
+                f"Date split: {len(before)} before, {len(after)} after {split_date}"
+            )
             return {"before": before, "after": after}
 
         except Exception as e:
@@ -130,13 +136,20 @@ class DataSplitter:
             if val_size > 0:
                 val_ratio = val_size / (1 - test_size)
                 train, val = train_test_split(
-                    train_val, test_size=val_ratio, shuffle=shuffle, random_state=random_state
+                    train_val,
+                    test_size=val_ratio,
+                    shuffle=shuffle,
+                    random_state=random_state,
                 )
                 if train.empty or val.empty or test.empty:
-                    logger.warning("One of the splits (train/val/test) is empty in split_random.")
+                    logger.warning(
+                        "One of the splits (train/val/test) is empty in split_random."
+                    )
                 return train, val, test
             if train_val.empty or test.empty:
-                logger.warning("One of the splits (train/test) is empty in split_random.")
+                logger.warning(
+                    "One of the splits (train/test) is empty in split_random."
+                )
             return train_val, pd.DataFrame(), test
         except Exception as e:
             logger.error(f"split_random failed: {e}")
@@ -198,13 +211,17 @@ class DataSplitter:
                 df[timestamp_col] = pd.to_datetime(df[timestamp_col])
             train = df[df[timestamp_col] <= train_end]
             if val_end:
-                val = df[(df[timestamp_col] > train_end) & (df[timestamp_col] <= val_end)]
+                val = df[
+                    (df[timestamp_col] > train_end) & (df[timestamp_col] <= val_end)
+                ]
                 test = df[df[timestamp_col] > val_end]
             else:
                 val = pd.DataFrame()
                 test = df[df[timestamp_col] > train_end]
             if train.empty or (val_end and val.empty) or test.empty:
-                logger.warning("One of the splits (train/val/test) is empty in split_by_time.")
+                logger.warning(
+                    "One of the splits (train/val/test) is empty in split_by_time."
+                )
             return train, val, test
         except Exception as e:
             logger.error(f"split_by_time failed: {e}")

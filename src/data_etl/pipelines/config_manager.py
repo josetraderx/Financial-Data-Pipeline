@@ -52,7 +52,9 @@ class PipelineConfig:
                 "min_records": 100,
                 "max_gap_hours": 24,
             },
-            "split_config": {"train_test_split": {"test_size": 0.2, "method": "chronological"}},
+            "split_config": {
+                "train_test_split": {"test_size": 0.2, "method": "chronological"}
+            },
             "storage_config": {
                 "save_files": True,
                 "store_db": True,
@@ -75,7 +77,11 @@ class PipelineConfig:
 
         def merge_dict(base: dict[str, Any], update: dict[str, Any]) -> None:
             for key, value in update.items():
-                if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                if (
+                    key in base
+                    and isinstance(base[key], dict)
+                    and isinstance(value, dict)
+                ):
                     merge_dict(base[key], value)
                 else:
                     base[key] = value

@@ -22,13 +22,28 @@ class DataStorageManager:
     """
 
     COMPRESSION_METHODS = {
-        "zlib": {"compress": zlib.compress, "decompress": zlib.decompress, "extension": ".zlib"},
-        "lzma": {"compress": lzma.compress, "decompress": lzma.decompress, "extension": ".xz"},
-        "bz2": {"compress": bz2.compress, "decompress": bz2.decompress, "extension": ".bz2"},
+        "zlib": {
+            "compress": zlib.compress,
+            "decompress": zlib.decompress,
+            "extension": ".zlib",
+        },
+        "lzma": {
+            "compress": lzma.compress,
+            "decompress": lzma.decompress,
+            "extension": ".xz",
+        },
+        "bz2": {
+            "compress": bz2.compress,
+            "decompress": bz2.decompress,
+            "extension": ".bz2",
+        },
     }
 
     def __init__(
-        self, base_dir: str | Path, compression_method: str = "zlib", compression_level: int = 6
+        self,
+        base_dir: str | Path,
+        compression_method: str = "zlib",
+        compression_level: int = 6,
     ):
         """
         Initialize storage manager.
@@ -130,7 +145,11 @@ class DataStorageManager:
         return file_path
 
     def retrieve_data(
-        self, symbol: str, start_date: str | datetime, end_date: str | datetime, timeframe: str
+        self,
+        symbol: str,
+        start_date: str | datetime,
+        end_date: str | datetime,
+        timeframe: str,
     ) -> pd.DataFrame:
         """
         Retrieve archived data.
@@ -156,7 +175,8 @@ class DataStorageManager:
         # Generate list of year/month combinations - ensure we cover partial months
         dates = pd.date_range(
             start_date.replace(day=1),
-            end_date + pd.Timedelta(days=32),  # Add buffer to ensure we get the end month
+            end_date
+            + pd.Timedelta(days=32),  # Add buffer to ensure we get the end month
             freq="MS",  # Month Start frequency
         )
         dfs = []
@@ -196,9 +216,9 @@ class DataStorageManager:
                     temp_path = file_path.with_suffix(".parquet")
                     with open(file_path, "rb") as f_in:
                         compressed_data = f_in.read()
-                    decompressed = self.COMPRESSION_METHODS[compression_type]["decompress"](
-                        compressed_data
-                    )
+                    decompressed = self.COMPRESSION_METHODS[compression_type][
+                        "decompress"
+                    ](compressed_data)
                     with open(temp_path, "wb") as f_out:
                         f_out.write(decompressed)
                     df = pd.read_parquet(temp_path)
@@ -234,7 +254,10 @@ class DataStorageManager:
         return result
 
     def create_backup(
-        self, source_path: str | Path, description: str | None = None, compress: bool = True
+        self,
+        source_path: str | Path,
+        description: str | None = None,
+        compress: bool = True,
     ) -> dict:
         """
         Create a backup with optional compression.
@@ -295,7 +318,9 @@ class DataStorageManager:
 
         return metadata
 
-    def restore_backup(self, timestamp: str, restore_path: str | Path | None = None) -> bool:
+    def restore_backup(
+        self, timestamp: str, restore_path: str | Path | None = None
+    ) -> bool:
         """
         Restore from backup.
 
@@ -361,7 +386,9 @@ class DataStorageManager:
                 data, level=self.compression_level
             )
         else:
-            compressed = self.COMPRESSION_METHODS[self.compression_method]["compress"](data)
+            compressed = self.COMPRESSION_METHODS[self.compression_method]["compress"](
+                data
+            )
 
         with open(target, "wb") as f_out:
             f_out.write(compressed)
@@ -388,7 +415,9 @@ class DataStorageManager:
                 self._compress_file(file_path, compressed_path)
                 file_path.unlink()
 
-    def cleanup_old_backups(self, keep_days: int = 30, minimum_keep: int = 5) -> list[str]:
+    def cleanup_old_backups(
+        self, keep_days: int = 30, minimum_keep: int = 5
+    ) -> list[str]:
         """
         Remove old backups while keeping a minimum number.
 
@@ -411,7 +440,9 @@ class DataStorageManager:
         backups_to_check = sorted_backups[minimum_keep:]
 
         for timestamp, metadata in backups_to_check:
-            backup_time = time.mktime(datetime.strptime(timestamp, "%Y%m%d_%H%M%S").timetuple())
+            backup_time = time.mktime(
+                datetime.strptime(timestamp, "%Y%m%d_%H%M%S").timetuple()
+            )
             days_old = (current_timestamp - backup_time) / (24 * 3600)
 
             if days_old > keep_days:

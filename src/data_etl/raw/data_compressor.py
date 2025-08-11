@@ -12,9 +12,21 @@ class DataCompressor:
     """Handles compression and decompression of market data files."""
 
     COMPRESSION_METHODS = {
-        "zlib": {"compress": zlib.compress, "decompress": zlib.decompress, "extension": ".zlib"},
-        "lzma": {"compress": lzma.compress, "decompress": lzma.decompress, "extension": ".xz"},
-        "bz2": {"compress": bz2.compress, "decompress": bz2.decompress, "extension": ".bz2"},
+        "zlib": {
+            "compress": zlib.compress,
+            "decompress": zlib.decompress,
+            "extension": ".zlib",
+        },
+        "lzma": {
+            "compress": lzma.compress,
+            "decompress": lzma.decompress,
+            "extension": ".xz",
+        },
+        "bz2": {
+            "compress": bz2.compress,
+            "decompress": bz2.decompress,
+            "extension": ".bz2",
+        },
     }
 
     def __init__(self, compression_method: str = "zlib", compression_level: int = 6):
@@ -122,13 +134,18 @@ class DataCompressor:
 
         with open(file_path, "rb") as f_in, open(output_path, "wb") as f_out:
             compressed_data = f_in.read()
-            decompressed_data = self.COMPRESSION_METHODS[self.method]["decompress"](compressed_data)
+            decompressed_data = self.COMPRESSION_METHODS[self.method]["decompress"](
+                compressed_data
+            )
             f_out.write(decompressed_data)
 
         return output_path
 
     def compress_directory(
-        self, dir_path: str | Path, output_dir: str | Path | None = None, pattern: str = "*.*"
+        self,
+        dir_path: str | Path,
+        output_dir: str | Path | None = None,
+        pattern: str = "*.*",
     ) -> list[dict]:
         """
         Compress all matching files in a directory.

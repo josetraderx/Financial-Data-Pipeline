@@ -77,7 +77,9 @@ class TestDataStorageManager:
         logger.debug("Sample data info:")
         logger.debug(f"Shape: {sample_data.shape}")
         logger.debug(f"Index: {sample_data.index.dtype}")
-        logger.debug(f"Date range: {sample_data.index.min()} to {sample_data.index.max()}")
+        logger.debug(
+            f"Date range: {sample_data.index.min()} to {sample_data.index.max()}"
+        )
         logger.debug(f"Columns: {sample_data.columns.tolist()}")
 
         # Archive data first with compression
@@ -120,9 +122,9 @@ class TestDataStorageManager:
         logger.debug(f"Date range: {retrieved.index.min()} to {retrieved.index.max()}")
         logger.debug(f"Columns: {retrieved.columns.tolist()}")
 
-        assert retrieved.shape == sample_data.shape, (
-            f"Shape mismatch: expected {sample_data.shape}, got {retrieved.shape}"
-        )
+        assert (
+            retrieved.shape == sample_data.shape
+        ), f"Shape mismatch: expected {sample_data.shape}, got {retrieved.shape}"
 
         # Compare data
         try:
@@ -183,9 +185,9 @@ class TestDataStorageManager:
         assert success
         assert restore_path.exists()
         restored_content = restore_path.read_text()
-        assert restored_content == original_content, (
-            f"Expected '{original_content}', got '{restored_content}'"
-        )
+        assert (
+            restored_content == original_content
+        ), f"Expected '{original_content}', got '{restored_content}'"
 
     def test_cleanup_old_backups(self, storage_manager, sample_file, monkeypatch):
         """Test cleaning up old backups."""
@@ -203,10 +205,14 @@ class TestDataStorageManager:
             backup_date = base_date + timedelta(days=i)
             backup_timestamp = backup_date.strftime("%Y%m%d_%H%M%S")
 
-            backup_info = storage_manager.create_backup(sample_file, description=f"Backup {i}")
+            backup_info = storage_manager.create_backup(
+                sample_file, description=f"Backup {i}"
+            )
 
             # Manually update the timestamp in metadata to simulate old backups
-            old_path = Path(storage_manager.metadata[backup_info["timestamp"]]["backup_path"])
+            old_path = Path(
+                storage_manager.metadata[backup_info["timestamp"]]["backup_path"]
+            )
             new_path = old_path.parent / f"{backup_timestamp}{old_path.suffix}"
             old_path.rename(new_path)
 
@@ -227,9 +233,9 @@ class TestDataStorageManager:
 
         # Should have removed some old backups
         assert len(removed) > 0, "No backups were removed"
-        assert len(storage_manager.metadata) >= 5, (
-            f"Too few backups kept: {len(storage_manager.metadata)}"
-        )
+        assert (
+            len(storage_manager.metadata) >= 5
+        ), f"Too few backups kept: {len(storage_manager.metadata)}"
 
     def test_compression_methods(self, storage_manager, sample_data):
         """Test different compression methods."""

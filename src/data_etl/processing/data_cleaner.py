@@ -83,14 +83,18 @@ class EnhancedDataValidator:
             if df is None or df.empty:
                 self.logger.warning(f"Input DataFrame is empty or None. df: {df}")
                 return df, report
-            self.logger.info(f"Initial DataFrame shape: {df.shape}, columns: {list(df.columns)}")
+            self.logger.info(
+                f"Initial DataFrame shape: {df.shape}, columns: {list(df.columns)}"
+            )
             self.error_stats["total_rows"] = len(df)
             self.error_stats["clean_rows"] = len(df)
             # Lowercase columns
             df.columns = df.columns.str.lower()
             self.logger.info(f"Columns after lowercasing: {list(df.columns)}")
             # Check required columns
-            missing_cols = [col for col in self.required_columns if col not in df.columns]
+            missing_cols = [
+                col for col in self.required_columns if col not in df.columns
+            ]
             if missing_cols:
                 self.logger.error(f"Missing required columns: {missing_cols}")
                 report["missing_cols"] = missing_cols
@@ -100,7 +104,9 @@ class EnhancedDataValidator:
             # Remove duplicates
             initial_len = len(df)
             df = df.drop_duplicates(subset=["timestamp"])
-            self.logger.info(f"Duplicates removed: {initial_len - len(df)}. Shape now: {df.shape}")
+            self.logger.info(
+                f"Duplicates removed: {initial_len - len(df)}. Shape now: {df.shape}"
+            )
             report["duplicates_removed"] = initial_len - len(df)
             self.error_stats["invalid_rows_removed"] += report["duplicates_removed"]
             self.error_stats["clean_rows"] = len(df)
@@ -123,7 +129,9 @@ class EnhancedDataValidator:
             self.logger.info(f"After outlier handling: {df.shape}")
             report.update(outlier_report)
             # Validate OHLC price consistency
-            df, price_report = self._validate_price_consistency(df, price_tolerance, impute_missing)
+            df, price_report = self._validate_price_consistency(
+                df, price_tolerance, impute_missing
+            )
             self.logger.info(f"After price consistency: {df.shape}")
             report.update(price_report)
             # Check time intervals/gaps
@@ -164,7 +172,9 @@ class EnhancedDataValidator:
             self.logger.error(traceback.format_exc())
             raise
 
-    def _convert_timestamps(self, df: pd.DataFrame, timestamp_format: str) -> pd.DataFrame:
+    def _convert_timestamps(
+        self, df: pd.DataFrame, timestamp_format: str
+    ) -> pd.DataFrame:
         if not pd.api.types.is_datetime64_any_dtype(df["timestamp"]):
             if df["timestamp"].dtype.name in ["int64", "float64"]:
                 df["timestamp"] = pd.to_datetime(df["timestamp"], unit=timestamp_format)
@@ -181,7 +191,9 @@ class EnhancedDataValidator:
     def _handle_missing_values(self, df: pd.DataFrame, impute: bool) -> pd.DataFrame:
         null_counts = df.isnull().sum()
         if null_counts.sum() > 0:
-            self.logger.warning(f"Null values found: {null_counts[null_counts > 0].to_dict()}")
+            self.logger.warning(
+                f"Null values found: {null_counts[null_counts > 0].to_dict()}"
+            )
             if impute:
                 for col in self.numeric_columns:
                     if col in df.columns:
@@ -203,7 +215,9 @@ class EnhancedDataValidator:
                     self.error_stats["clean_rows"] = len(df)
         return df
 
-    def _handle_outliers(self, df: pd.DataFrame, factor: float) -> tuple[pd.DataFrame, dict]:
+    def _handle_outliers(
+        self, df: pd.DataFrame, factor: float
+    ) -> tuple[pd.DataFrame, dict]:
         outlier_report = {"outliers_detected": {}, "outliers_fixed": 0}
         for col in self.numeric_columns:
             Q1 = df[col].quantile(0.25)
@@ -216,7 +230,9 @@ class EnhancedDataValidator:
             if count > 0:
                 outlier_report["outliers_detected"][col] = count
                 outlier_report["outliers_fixed"] += count
-                df.loc[outliers, col] = df.loc[outliers, col].clip(lower=lower, upper=upper)
+                df.loc[outliers, col] = df.loc[outliers, col].clip(
+                    lower=lower, upper=upper
+                )
         return df, outlier_report
 
     def _validate_price_consistency(
@@ -238,8 +254,12 @@ class EnhancedDataValidator:
             )
             if impute_missing:
                 affected = df.loc[inconsistent].copy()
-                df.loc[inconsistent, "high"] = affected[["open", "close", "high"]].max(axis=1)
-                df.loc[inconsistent, "low"] = affected[["open", "close", "low"]].min(axis=1)
+                df.loc[inconsistent, "high"] = affected[["open", "close", "high"]].max(
+                    axis=1
+                )
+                df.loc[inconsistent, "low"] = affected[["open", "close", "low"]].min(
+                    axis=1
+                )
                 self.logger.info(f"Fixed price inconsistencies in {count} rows")
             else:
                 df = df[~inconsistent]
@@ -257,7 +277,9 @@ class EnhancedDataValidator:
             large_gaps = df["interval"] > (6 * median_interval)
             gap_count = int(large_gaps.sum())
             if gap_count > 0:
-                self.logger.warning(f"{gap_count} large time gaps detected in timestamps")
+                self.logger.warning(
+                    f"{gap_count} large time gaps detected in timestamps"
+                )
             report["time_gaps"] = gap_count
             df.drop("interval", axis=1, inplace=True)
         return report
@@ -269,7 +291,9 @@ class EnhancedDataValidator:
         df["year"] = df["timestamp"].dt.year
         return df
 
-    def _validate_timestamps(self, df: pd.DataFrame, timestamp_format: str = "s") -> dict:
+    def _validate_timestamps(
+        self, df: pd.DataFrame, timestamp_format: str = "s"
+    ) -> dict:
         """
         Private method to validate timestamps: checks for duplicates, sorts, detects gaps, and reports interval regularity.
         Args:
@@ -307,7 +331,9 @@ class EnhancedDataValidator:
             missing_intervals = intervals != most_common_interval
             missing_count = int(missing_intervals.sum())
             if missing_count > 0:
-                self.logger.warning(f"Found {missing_count} irregular timestamp intervals.")
+                self.logger.warning(
+                    f"Found {missing_count} irregular timestamp intervals."
+                )
             report["irregular_intervals"] = missing_count
         # Drop interval column
         if "interval" in df.columns:
@@ -325,10 +351,14 @@ class EnhancedDataValidator:
             self.logger.warning(f"Found {zero_count} rows with zero prices.")
         return {
             "zero_price_rows": zero_count,
-            "zero_price_indices": df.index[zero_mask].tolist() if zero_count > 0 else [],
+            "zero_price_indices": (
+                df.index[zero_mask].tolist() if zero_count > 0 else []
+            ),
         }
 
-    def _check_extreme_price_changes(self, df: pd.DataFrame, threshold: float = 0.2) -> dict:
+    def _check_extreme_price_changes(
+        self, df: pd.DataFrame, threshold: float = 0.2
+    ) -> dict:
         """
         Check for extreme price changes between consecutive closes (default threshold: 20%).
         Returns a report with the count and indices.
@@ -344,7 +374,9 @@ class EnhancedDataValidator:
             )
         return {
             "extreme_price_changes": extreme_count,
-            "extreme_change_indices": df.index[extreme_mask].tolist() if extreme_count > 0 else [],
+            "extreme_change_indices": (
+                df.index[extreme_mask].tolist() if extreme_count > 0 else []
+            ),
         }
 
     def _check_zero_volume(self, df: pd.DataFrame) -> dict:
@@ -360,7 +392,9 @@ class EnhancedDataValidator:
             self.logger.warning(f"Found {zero_vol_count} rows with zero volume.")
         return {
             "zero_volume_rows": zero_vol_count,
-            "zero_volume_indices": df.index[zero_vol_mask].tolist() if zero_vol_count > 0 else [],
+            "zero_volume_indices": (
+                df.index[zero_vol_mask].tolist() if zero_vol_count > 0 else []
+            ),
         }
 
 
@@ -454,7 +488,9 @@ class ResilientDataSource(EnhancedDataValidator):
             try:
                 self.logger.debug(f"Requesting data from {url} (attempt {attempt + 1})")
 
-                response = self.session.get(url, timeout=timeout, headers=request_headers)
+                response = self.session.get(
+                    url, timeout=timeout, headers=request_headers
+                )
 
                 if response.status_code == 200:
                     data = response.json()
@@ -462,7 +498,9 @@ class ResilientDataSource(EnhancedDataValidator):
                     return data
                 elif response.status_code == 429:
                     # Rate limit hit
-                    self._track_error("rate_limit_hits", url, "Rate limit exceeded", attempt)
+                    self._track_error(
+                        "rate_limit_hits", url, "Rate limit exceeded", attempt
+                    )
                     retry_after = int(response.headers.get("Retry-After", retry_delay))
                     sleep(retry_after)
                 else:
@@ -471,7 +509,9 @@ class ResilientDataSource(EnhancedDataValidator):
             except (TimeoutError, requests.ConnectionError, requests.Timeout) as e:
                 self._track_error("network_errors", url, str(e), attempt)
                 if attempt == max_retries - 1:
-                    self.logger.error(f"Failed to get data from {url} after {max_retries} attempts")
+                    self.logger.error(
+                        f"Failed to get data from {url} after {max_retries} attempts"
+                    )
                     raise
 
                 # Exponential backoff
@@ -523,7 +563,9 @@ class ResilientDataSource(EnhancedDataValidator):
                 response = self.session.get(url)
 
                 if response.status_code == 429:  # Rate limit
-                    self._track_error("rate_limit_hits", url, "Rate limit exceeded", attempt)
+                    self._track_error(
+                        "rate_limit_hits", url, "Rate limit exceeded", attempt
+                    )
 
                     # Try to get retry-after header
                     retry_after = response.headers.get("Retry-After")
@@ -533,7 +575,9 @@ class ResilientDataSource(EnhancedDataValidator):
                         # Exponential backoff if no retry-after header
                         delay = rate_limit_delay * (2**attempt)
 
-                    self.logger.warning(f"Rate limited, waiting {delay}s (attempt {attempt + 1})")
+                    self.logger.warning(
+                        f"Rate limited, waiting {delay}s (attempt {attempt + 1})"
+                    )
                     sleep(delay)
                     continue
 
@@ -574,7 +618,9 @@ class ResilientDataSource(EnhancedDataValidator):
         try:
             if cache_path.exists():
                 # Check cache age
-                cache_age = datetime.now() - datetime.fromtimestamp(cache_path.stat().st_mtime)
+                cache_age = datetime.now() - datetime.fromtimestamp(
+                    cache_path.stat().st_mtime
+                )
 
                 if cache_age.total_seconds() < max_cache_age_hours * 3600:
                     # Cache is fresh
@@ -584,7 +630,9 @@ class ResilientDataSource(EnhancedDataValidator):
                     self.logger.debug(f"Using cached data for {cache_key}")
                     return pd.DataFrame(data) if isinstance(data, list) else data
                 else:
-                    self.logger.info(f"Cache expired for {cache_key}, fetching fresh data")
+                    self.logger.info(
+                        f"Cache expired for {cache_key}, fetching fresh data"
+                    )
 
         except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
             self.logger.warning(f"Cache corruption for {cache_key}: {e}")
@@ -624,7 +672,9 @@ class ResilientDataSource(EnhancedDataValidator):
         df = df.dropna(subset=["timestamp"])
 
         if len(df) < initial_count:
-            self.logger.warning(f"Removed {initial_count - len(df)} rows with invalid timestamps")
+            self.logger.warning(
+                f"Removed {initial_count - len(df)} rows with invalid timestamps"
+            )
 
         # Ensure timezone awareness
         if df["timestamp"].dt.tz is None:
@@ -646,7 +696,9 @@ class ResilientDataSource(EnhancedDataValidator):
             return response.json()
 
         except requests.Timeout:
-            self._track_error("timeout_errors", url, f"Request timed out after {timeout}s", 0)
+            self._track_error(
+                "timeout_errors", url, f"Request timed out after {timeout}s", 0
+            )
             raise TimeoutError(f"Request to {url} timed out after {timeout}s")
 
     def get_error_summary(self) -> dict:

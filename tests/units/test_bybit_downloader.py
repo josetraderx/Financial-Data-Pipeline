@@ -11,7 +11,9 @@ def test_bybit_downloader(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {
         "retCode": 0,  # <-- Este campo es necesario
-        "result": {"list": [["1704067200000", "50000", "50100", "49950", "50050", "100", "10"]]},
+        "result": {
+            "list": [["1704067200000", "50000", "50100", "49950", "50050", "100", "10"]]
+        },
     }
 
     downloader = BybitDownloader()
@@ -25,6 +27,6 @@ def test_bybit_downloader(mock_get):
     assert not df.empty, "El DataFrame está vacío"
 
     expected_columns = {"open", "high", "low", "close", "volume", "turnover"}
-    assert expected_columns.issubset(df.columns), (
-        f"Faltan columnas esperadas: {expected_columns - set(df.columns)}"
-    )
+    assert expected_columns.issubset(
+        df.columns
+    ), f"Faltan columnas esperadas: {expected_columns - set(df.columns)}"

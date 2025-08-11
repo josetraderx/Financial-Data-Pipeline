@@ -128,10 +128,14 @@ class EnhancedMetadataManager:
                     "num_records": metadata.get("num_records"),
                 }
             except Exception as e:
-                self.logger.warning(f"Could not read metadata file {metadata_file}: {e}")
+                self.logger.warning(
+                    f"Could not read metadata file {metadata_file}: {e}"
+                )
 
         self._save_metadata_index()
-        self.logger.info(f"Rebuilt metadata index with {len(self.metadata_index)} entries")
+        self.logger.info(
+            f"Rebuilt metadata index with {len(self.metadata_index)} entries"
+        )
 
     def calculate_sha256(self, file_path: str | Path) -> str:
         """Calculate SHA-256 hash of a file."""
@@ -152,7 +156,9 @@ class EnhancedMetadataManager:
         try:
             total_cells = df.size
             missing_cells = df.isnull().sum().sum()
-            missing_percentage = (missing_cells / total_cells) * 100 if total_cells > 0 else 0
+            missing_percentage = (
+                (missing_cells / total_cells) * 100 if total_cells > 0 else 0
+            )
 
             # Calculate a basic quality score
             quality_score = max(0, 100 - missing_percentage)
@@ -280,7 +286,9 @@ class EnhancedMetadataManager:
             self.logger.error(f"Error loading metadata from {metadata_path}: {e}")
             return None
 
-    def find_metadata_by_symbol_interval(self, symbol: str, interval: str) -> dict | None:
+    def find_metadata_by_symbol_interval(
+        self, symbol: str, interval: str
+    ) -> dict | None:
         """Find metadata by symbol and interval."""
         index_key = f"{symbol}_{interval}"
 

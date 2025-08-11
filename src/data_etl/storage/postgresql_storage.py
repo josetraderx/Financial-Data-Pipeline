@@ -153,7 +153,9 @@ class PostgreSQLStorage:
 
         return stats
 
-    def get_table_stats(self, symbol: str, table_name: str = "market_data_clean") -> dict | None:
+    def get_table_stats(
+        self, symbol: str, table_name: str = "market_data_clean"
+    ) -> dict | None:
         """
         Get statistics for inserted data
 
@@ -196,7 +198,9 @@ class PostgreSQLStorage:
 
 
 def store_processed_data_to_postgresql(
-    parquet_file_path: str, connection_params: dict[str, Any], table_name: str = "market_data_clean"
+    parquet_file_path: str,
+    connection_params: dict[str, Any],
+    table_name: str = "market_data_clean",
 ) -> bool:
     """
     Main function to store processed parquet data to PostgreSQL
@@ -271,7 +275,9 @@ if __name__ == "__main__":
     parquet_files = glob.glob("data/processed/BTCUSDT_D_full*.parquet")
 
     if parquet_files:
-        success = store_processed_data_to_postgresql(parquet_files[0], DEFAULT_CONNECTION_PARAMS)
+        success = store_processed_data_to_postgresql(
+            parquet_files[0], DEFAULT_CONNECTION_PARAMS
+        )
         if success:
             print("✅ Data successfully stored to PostgreSQL")
         else:

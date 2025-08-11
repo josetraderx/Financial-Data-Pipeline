@@ -34,7 +34,11 @@ class BinanceDataProvider:
         self.test_mode = test_mode
 
     def download_historical_data(
-        self, symbol: str, start_date: datetime, end_date: datetime, interval: str = "1h"
+        self,
+        symbol: str,
+        start_date: datetime,
+        end_date: datetime,
+        interval: str = "1h",
     ) -> pd.DataFrame:
         """
         Download historical OHLCV data from Binance.
@@ -129,7 +133,11 @@ class BinanceDataProvider:
             return pd.DataFrame()
 
     def _get_test_data(
-        self, symbol: str, start_date: datetime, end_date: datetime, interval: str = "1h"
+        self,
+        symbol: str,
+        start_date: datetime,
+        end_date: datetime,
+        interval: str = "1h",
     ) -> pd.DataFrame:
         """
         Generate test data for testing purposes.
@@ -147,7 +155,9 @@ class BinanceDataProvider:
         if interval == "1h":
             dates = pd.date_range(start=start_date, end=end_date, freq="H", tz=pytz.UTC)
         else:  # Default to 1m
-            dates = pd.date_range(start=start_date, end=end_date, freq="min", tz=pytz.UTC)
+            dates = pd.date_range(
+                start=start_date, end=end_date, freq="min", tz=pytz.UTC
+            )
 
         # Generate mock price data with some randomness but realistic movement
         base_price = 30000.0  # Starting price for BTC

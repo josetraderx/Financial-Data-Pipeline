@@ -51,7 +51,8 @@ class MetadataDB:
         cursor = self.connection.cursor()
 
         # Dataset metadata table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS dataset_metadata (
                 id SERIAL PRIMARY KEY,
                 dataset_name VARCHAR(255) NOT NULL,
@@ -68,10 +69,12 @@ class MetadataDB:
                 metadata_json JSONB,
                 UNIQUE(dataset_name, provider, symbol, timeframe)
             )
-        """)
+        """
+        )
 
         # Validation reports table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS validation_reports (
                 id SERIAL PRIMARY KEY,
                 dataset_id INTEGER REFERENCES dataset_metadata(id),
@@ -87,10 +90,12 @@ class MetadataDB:
                 errors JSONB,
                 warnings JSONB
             )
-        """)
+        """
+        )
 
         # Data lineage table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS data_lineage (
                 id SERIAL PRIMARY KEY,
                 source_dataset_id INTEGER REFERENCES dataset_metadata(id),
@@ -99,10 +104,12 @@ class MetadataDB:
                 transformation_details JSONB,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Data quality metrics table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS data_quality_metrics (
                 id SERIAL PRIMARY KEY,
                 dataset_id INTEGER REFERENCES dataset_metadata(id),
@@ -111,25 +118,34 @@ class MetadataDB:
                 metric_details JSONB,
                 calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Indexes for better performance
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_dataset_metadata_provider
             ON dataset_metadata(provider)
-        """)
-        cursor.execute("""
+        """
+        )
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_dataset_metadata_symbol
             ON dataset_metadata(symbol)
-        """)
-        cursor.execute("""
+        """
+        )
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_validation_reports_dataset_id
             ON validation_reports(dataset_id)
-        """)
-        cursor.execute("""
+        """
+        )
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_data_lineage_source
             ON data_lineage(source_dataset_id)
-        """)
+        """
+        )
 
         self.connection.commit()
         logger.info("Metadata tables created successfully")
@@ -269,7 +285,11 @@ class MetadataDB:
         return report_id
 
     def insert_data_lineage(
-        self, source_id: int, target_id: int, transformation_type: str, details: dict[str, Any]
+        self,
+        source_id: int,
+        target_id: int,
+        transformation_type: str,
+        details: dict[str, Any],
     ) -> int:
         """
         Insert data lineage record.
@@ -304,7 +324,9 @@ class MetadataDB:
         logger.info(f"Data lineage record stored with ID: {lineage_id}")
         return lineage_id
 
-    def insert_quality_metrics(self, dataset_id: int, metrics: dict[str, float]) -> None:
+    def insert_quality_metrics(
+        self, dataset_id: int, metrics: dict[str, float]
+    ) -> None:
         """
         Insert data quality metrics for a dataset.
 
@@ -331,7 +353,10 @@ class MetadataDB:
         logger.info(f"Quality metrics stored for dataset {dataset_id}")
 
     def get_dataset_metadata(
-        self, dataset_id: int | None = None, provider: str | None = None, symbol: str | None = None
+        self,
+        dataset_id: int | None = None,
+        provider: str | None = None,
+        symbol: str | None = None,
     ) -> list[dict[str, Any]]:
         """
         Retrieve dataset metadata.
@@ -479,16 +504,19 @@ class MetadataDB:
         total_datasets = cursor.fetchone()["total_datasets"]
 
         # Datasets by provider
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT provider, COUNT(*) as count
             FROM dataset_metadata
             GROUP BY provider
             ORDER BY count DESC
-        """)
+        """
+        )
         by_provider = [dict(row) for row in cursor.fetchall()]
 
         # Recent validation status
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT
                 SUM(CASE WHEN is_valid THEN 1 ELSE 0 END) as valid_datasets,
                 SUM(CASE WHEN NOT is_valid THEN 1 ELSE 0 END) as invalid_datasets
@@ -497,7 +525,8 @@ class MetadataDB:
                 SELECT MAX(id) FROM validation_reports
                 GROUP BY dataset_id
             )
-        """)
+        """
+        )
         validation_status = dict(cursor.fetchone())
 
         return {

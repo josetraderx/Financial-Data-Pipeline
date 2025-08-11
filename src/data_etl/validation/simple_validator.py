@@ -19,7 +19,9 @@ class SimpleDataValidator:
         self.config = config or {}
         self.logger = logger
 
-    def validate_and_clean(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
+    def validate_and_clean(
+        self, df: pd.DataFrame
+    ) -> tuple[pd.DataFrame, dict[str, Any]]:
         """
         Validación y limpieza simplificada de datos OHLCV.
 
@@ -96,15 +98,21 @@ class SimpleDataValidator:
                 "valid_records": final_count,
                 "missing_values": initial_count - len(df.dropna()),
                 "outliers_detected": 0,  # Placeholder
-                "quality_score": final_count / initial_count if initial_count > 0 else 0,
+                "quality_score": (
+                    final_count / initial_count if initial_count > 0 else 0
+                ),
                 "errors": [],
                 "warnings": [],
             }
 
             if final_count < initial_count:
-                report["warnings"].append(f"Removed {initial_count - final_count} invalid records")
+                report["warnings"].append(
+                    f"Removed {initial_count - final_count} invalid records"
+                )
 
-            self.logger.info(f"Validation complete: {final_count}/{initial_count} valid records")
+            self.logger.info(
+                f"Validation complete: {final_count}/{initial_count} valid records"
+            )
 
             return df_clean.reset_index(drop=True), report
 

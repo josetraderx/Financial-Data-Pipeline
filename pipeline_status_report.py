@@ -73,12 +73,14 @@ def check_postgresql_status():
         print("✅ PostgreSQL connection successful")
 
         # Check available tables
-        cur.execute("""
+        cur.execute(
+            """
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
             AND table_name LIKE '%market_data%'
-        """)
+        """
+        )
         tables = cur.fetchall()
 
         if not tables:
@@ -95,7 +97,8 @@ def check_postgresql_status():
             total_records = cur.fetchone()[0]
 
             if total_records > 0:
-                cur.execute(f"""
+                cur.execute(
+                    f"""
                     SELECT
                         symbol,
                         COUNT(*) as records,
@@ -107,13 +110,20 @@ def check_postgresql_status():
                     FROM {table_name}
                     GROUP BY symbol
                     ORDER BY symbol
-                """)
+                """
+                )
 
                 symbols = cur.fetchall()
                 for symbol_data in symbols:
-                    symbol, records, earliest, latest, min_price, max_price, avg_volume = (
-                        symbol_data
-                    )
+                    (
+                        symbol,
+                        records,
+                        earliest,
+                        latest,
+                        min_price,
+                        max_price,
+                        avg_volume,
+                    ) = symbol_data
                     print(f"  📈 {symbol}: {records} records")
                     print(f"     📅 Date range: {earliest.date()} to {latest.date()}")
                     print(f"     💰 Price range: ${min_price:.2f} - ${max_price:.2f}")
@@ -184,12 +194,14 @@ def display_pipeline_summary():
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
 
-        cur.execute("""
+        cur.execute(
+            """
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
             AND table_name LIKE '%market_data%'
-        """)
+        """
+        )
         tables = cur.fetchall()
 
         db_records = 0

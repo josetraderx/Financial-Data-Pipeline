@@ -41,7 +41,15 @@ class DataValidator:
 
         try:
             # 1. Validar columnas requeridas
-            required_columns = ["timestamp", "symbol", "open", "high", "low", "close", "volume"]
+            required_columns = [
+                "timestamp",
+                "symbol",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+            ]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 self.logger.error(f"Missing required columns: {missing_columns}")
@@ -56,14 +64,18 @@ class DataValidator:
             # 3. Validar tipos de datos
             df["timestamp"] = pd.to_datetime(df["timestamp"])
             numeric_columns = ["open", "high", "low", "close", "volume"]
-            df[numeric_columns] = df[numeric_columns].apply(pd.to_numeric, errors="coerce")
+            df[numeric_columns] = df[numeric_columns].apply(
+                pd.to_numeric, errors="coerce"
+            )
 
             # 4. Validar valores
             # 4.1 No negativos
             for col in numeric_columns:
                 invalid_rows = df[df[col] < 0].index
                 if not invalid_rows.empty:
-                    self.logger.warning(f"Found {len(invalid_rows)} negative values in {col}")
+                    self.logger.warning(
+                        f"Found {len(invalid_rows)} negative values in {col}"
+                    )
                     df.loc[invalid_rows, col] = np.nan
 
             # 4.2 Validar OHLC (high >= low, etc.)
@@ -97,7 +109,9 @@ class DataValidator:
             # 6. Validar gaps temporales
             df = df.sort_values("timestamp")
             time_diff = df["timestamp"].diff()
-            expected_diff = pd.Timedelta(minutes=1)  # Ajusta según el intervalo esperado
+            expected_diff = pd.Timedelta(
+                minutes=1
+            )  # Ajusta según el intervalo esperado
 
             gaps = time_diff[time_diff > expected_diff]
             if not gaps.empty:
@@ -107,7 +121,9 @@ class DataValidator:
             original_len = len(df)
             df = df.dropna()
             if len(df) < original_len:
-                self.logger.warning(f"Removed {original_len - len(df)} rows with NaN values")
+                self.logger.warning(
+                    f"Removed {original_len - len(df)} rows with NaN values"
+                )
 
             self.logger.info(f"Validation complete. {len(df)} valid rows remaining")
             return df

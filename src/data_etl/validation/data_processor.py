@@ -66,7 +66,9 @@ class DataProcessor:
         )
 
         if invalid_rows.any():
-            self.logger.warning(f"Found {invalid_rows.sum()} rows with invalid price relationships")
+            self.logger.warning(
+                f"Found {invalid_rows.sum()} rows with invalid price relationships"
+            )
             df = df[~invalid_rows].copy()
 
         # Handle missing values
@@ -121,7 +123,10 @@ class DataProcessor:
         return df
 
     def validate_and_clean(
-        self, df: pd.DataFrame, clean_outliers: bool = True, outlier_threshold: float = 3.0
+        self,
+        df: pd.DataFrame,
+        clean_outliers: bool = True,
+        outlier_threshold: float = 3.0,
     ) -> pd.DataFrame:
         """
         Complete validation and cleaning pipelines.

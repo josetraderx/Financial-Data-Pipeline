@@ -51,7 +51,9 @@ def test_validate_ohlcv_valid_data(processor, valid_data):
     """Test validation with valid data."""
     result = processor.validate_ohlcv_data(valid_data)
     assert not result.empty
-    assert all(col in result.columns for col in ["open", "high", "low", "close", "volume"])
+    assert all(
+        col in result.columns for col in ["open", "high", "low", "close", "volume"]
+    )
 
 
 def test_validate_ohlcv_invalid_data(processor, invalid_data):
@@ -92,7 +94,9 @@ def test_validate_and_clean_pipelines(processor, valid_data):
     test_data.iloc[-1]["close"] = 50000.0  # Outlier
     test_data.iloc[-1]["volume"] = -100.0  # Invalid volume
 
-    result = processor.validate_and_clean(test_data, clean_outliers=True, outlier_threshold=2.0)
+    result = processor.validate_and_clean(
+        test_data, clean_outliers=True, outlier_threshold=2.0
+    )
 
     assert not result.empty
     assert result.shape[0] <= test_data.shape[0]  # Invalid rows might be removed

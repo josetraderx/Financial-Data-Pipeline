@@ -135,7 +135,9 @@ class CryptoPipeline:
                     "1m": "1",  # 1 minute
                 }
                 bybit_timeframe = timeframe_map.get(timeframe, timeframe)
-                logger.info(f"Using Bybit timeframe: {bybit_timeframe} (from {timeframe})")
+                logger.info(
+                    f"Using Bybit timeframe: {bybit_timeframe} (from {timeframe})"
+                )
 
                 data = provider_instance.download_complete_history(
                     symbol, bybit_timeframe, start_date, end_date
@@ -179,7 +181,9 @@ class CryptoPipeline:
             norm_cfg = pipeline_config.get("normalize", True)
             if norm_cfg:
                 method = pipeline_config.get("normalize_method", "zscore")
-                cleaned_data = self.normalizer.normalize_ohlcv(cleaned_data, method=method)
+                cleaned_data = self.normalizer.normalize_ohlcv(
+                    cleaned_data, method=method
+                )
                 logger.info(f"Data normalized using method: {method}")
 
             # Agregación de timeframe (opcional)
@@ -191,7 +195,9 @@ class CryptoPipeline:
                 freq = self.aggregator.validate_timeframe(target_timeframe)
                 # Asegurarse que el índice sea datetime
                 if "timestamp" in cleaned_data.columns:
-                    cleaned_data["timestamp"] = pd.to_datetime(cleaned_data["timestamp"], unit="s")
+                    cleaned_data["timestamp"] = pd.to_datetime(
+                        cleaned_data["timestamp"], unit="s"
+                    )
                     cleaned_data = cleaned_data.set_index("timestamp")
                 cleaned_data = self.aggregator.aggregate_ohlcv(cleaned_data, freq)
                 logger.info(f"Data aggregated to timeframe: {target_timeframe}")
@@ -237,13 +243,17 @@ class CryptoPipeline:
 
             if split_config.get("date_split"):
                 config = split_config["date_split"]
-                date_splits = self.splitter.split_by_date(data, split_date=config["split_date"])
+                date_splits = self.splitter.split_by_date(
+                    data, split_date=config["split_date"]
+                )
                 splits.update(date_splits)
 
             if split_config.get("sliding_windows"):
                 config = split_config["sliding_windows"]
                 windows = self.splitter.create_sliding_windows(
-                    data, window_size=config["window_size"], step_size=config.get("step_size", 1)
+                    data,
+                    window_size=config["window_size"],
+                    step_size=config.get("step_size", 1),
                 )
                 splits["windows"] = windows
 
@@ -294,7 +304,9 @@ class CryptoPipeline:
         except Exception as e:
             logger.error(f"Error storing validation report: {e}")
 
-    def save_to_file(self, data: pd.DataFrame, filename: str, format: str = "parquet") -> str:
+    def save_to_file(
+        self, data: pd.DataFrame, filename: str, format: str = "parquet"
+    ) -> str:
         """
         Save data to file.
 
@@ -343,7 +355,9 @@ class CryptoPipeline:
             if assets:
                 all_results = {}
                 for asset in assets:
-                    logger.info(f"--- Processing {asset['symbol']} {asset['timeframe']} ---")
+                    logger.info(
+                        f"--- Processing {asset['symbol']} {asset['timeframe']} ---"
+                    )
                     asset_config = pipeline_config.copy()
                     asset_config["symbol"] = asset["symbol"]
                     asset_config["timeframe"] = asset["timeframe"]
@@ -372,7 +386,9 @@ class CryptoPipeline:
             start_date = pipeline_config["start_date"]
             end_date = pipeline_config["end_date"]
             logger.info(f"Starting pipeline for {provider} {symbol} {timeframe}")
-            raw_data = self.download_data(provider, symbol, timeframe, start_date, end_date)
+            raw_data = self.download_data(
+                provider, symbol, timeframe, start_date, end_date
+            )
             if raw_data is not None:
                 logger.info(f"Downloaded data type: {type(raw_data)}")
                 if hasattr(raw_data, "shape"):
@@ -389,26 +405,36 @@ class CryptoPipeline:
             if not process_result["is_valid"]:
                 results["errors"].append("Data cleaning/validation failed")
                 if "errors" in process_result["report"]:
-                    logger.error(f"Validation errors: {process_result['report']['errors']}")
+                    logger.error(
+                        f"Validation errors: {process_result['report']['errors']}"
+                    )
             cleaned_data = process_result["data"]
             validation_report = process_result["report"]
             datasets = {"full": cleaned_data}
             try:
-                logger.info("Upserting cleaned 'full' dataset into TimescaleDB (PostgreSQL)...")
+                logger.info(
+                    "Upserting cleaned 'full' dataset into TimescaleDB (PostgreSQL)..."
+                )
                 from data_etl.storage.timeseries_db import TimeSeriesDB
 
                 db_cfg = (
-                    self.db_config if hasattr(self, "db_config") else EXAMPLE_CONFIG["db_config"]
+                    self.db_config
+                    if hasattr(self, "db_config")
+                    else EXAMPLE_CONFIG["db_config"]
                 )
                 tsdb = TimeSeriesDB(db_cfg)
                 tsdb.connect()
                 tsdb.upsert_ohlcv_data(cleaned_data, table_name="ohlcv_data")
                 tsdb.disconnect()
-                logger.info("✅ Real cleaned data upserted into TimescaleDB (table: ohlcv_data)")
+                logger.info(
+                    "✅ Real cleaned data upserted into TimescaleDB (table: ohlcv_data)"
+                )
             except Exception as e:
                 logger.error(f"Failed to upsert cleaned data into TimescaleDB: {e}")
             if pipeline_config.get("splits"):
-                split_datasets = self.split_data(cleaned_data, pipeline_config["splits"])
+                split_datasets = self.split_data(
+                    cleaned_data, pipeline_config["splits"]
+                )
                 datasets.update(split_datasets)
             dataset_ids = {}
             if pipeline_config.get("store_db", False):
@@ -489,7 +515,9 @@ class CryptoPipeline:
                                 "error": "Storage failed",
                             }
                     else:
-                        logger.warning("No full dataset file found for PostgreSQL storage")
+                        logger.warning(
+                            "No full dataset file found for PostgreSQL storage"
+                        )
                         results["postgresql_storage"] = {
                             "success": False,
                             "error": "No full dataset found",
@@ -533,7 +561,11 @@ EXAMPLE_CONFIG = {
         "password": "your_password",
     },
     "providers": {
-        "bybit": {"api_key": "your_api_key", "api_secret": "your_api_secret", "testnet": True}
+        "bybit": {
+            "api_key": "your_api_key",
+            "api_secret": "your_api_secret",
+            "testnet": True,
+        }
     },
     "validation_config": {
         "handle_missing": "interpolate",

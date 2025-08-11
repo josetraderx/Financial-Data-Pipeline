@@ -10,7 +10,11 @@ def setup_test_db():
     """Create test database if it doesn't exist."""
     # Conectar a postgres para crear la base de datos
     conn = psycopg2.connect(
-        host="localhost", port=5433, database="postgres", user="postgres", password="Jireh2023."
+        host="localhost",
+        port=5433,
+        database="postgres",
+        user="postgres",
+        password="Jireh2023.",
     )
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cur = conn.cursor()
@@ -51,18 +55,24 @@ def setup_test_db():
 def teardown_test_db():
     """Drop test database after tests."""
     conn = psycopg2.connect(
-        host="localhost", port=5433, database="postgres", user="postgres", password="Jireh2023."
+        host="localhost",
+        port=5433,
+        database="postgres",
+        user="postgres",
+        password="Jireh2023.",
     )
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cur = conn.cursor()
 
     # Terminar conexiones existentes
-    cur.execute("""
+    cur.execute(
+        """
         SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
         WHERE pg_stat_activity.datname = 'exodus_test_db'
         AND pid <> pg_backend_pid();
-    """)
+    """
+    )
 
     try:
         cur.execute("DROP DATABASE IF EXISTS exodus_test_db;")
