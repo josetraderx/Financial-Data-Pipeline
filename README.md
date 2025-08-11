@@ -1,6 +1,6 @@
 [![codecov](https://codecov.io/gh/josetraderx/Financial-Data-Pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/josetraderx/Financial-Data-Pipeline)
 
-# Financial Data Pipeline �
+# Financial Data Pipeline 📈
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/josetraderx/financial-data-pipeline/main)
@@ -9,24 +9,26 @@
 A modular, enterprise-grade ETL pipeline for financial market data. Supports extraction, transformation, validation, and storage from multiple sources (crypto, equities, derivatives) with advanced analytics and database integration.
 
 ## Table of Contents
-1. Overview
-2. Requirements
-3. Architecture
-4. Key Features
-5. Quick Start
-6. Configuration
-7. Data Validation
-8. Data Storage
-# Financial Data Pipeline
-10. Monitoring and Quality Assurance
-11. Error Handling
-12. Performance Optimization
-13. Testing
-14. Examples
-15. Extension Points
-16. Troubleshooting
-17. Contributing
-18. License
+1. [Overview](#overview)
+2. [Requirements](#requirements)
+3. [5-Minute Quick Start](#5-minute-quick-start)
+4. [Architecture](#architecture)
+5. [Key Features](#key-features)
+6. [Installation & Setup](#installation--setup)
+7. [Configuration](#configuration)
+8. [Data Validation](#data-validation)
+9. [Data Storage](#data-storage)
+10. [Data Splitting](#data-splitting)
+11. [Monitoring and Quality Assurance](#monitoring-and-quality-assurance)
+12. [Error Handling](#error-handling)
+13. [Performance Optimization](#performance-optimization)
+14. [Testing](#testing)
+15. [Examples](#examples)
+16. [Extension Points](#extension-points)
+17. [FAQ](#frequently-asked-questions-faq)
+18. [Troubleshooting](#troubleshooting)
+19. [Contributing](#contributing)
+20. [License](#license)
 
 ## Overview
 
@@ -39,21 +41,87 @@ Exodus v2025 is a professional and modular ETL pipeline for financial data (cryp
 - **PostgreSQL** and **TimescaleDB** for database storage (if using DB features)
 - **pytest** for running tests
 
-### Installation
+## 5-Minute Quick Start
 
-1. Clone the repository:
-   ```bash
-   git clone <repo_url>
-   cd Data_ETL
-   ```
-2. Install dependencies (using Poetry):
-   ```bash
-   poetry install
-   ```
-   Or with pip:
+### Option 1: Terminal Quick Start (No Code Required)
+```bash
+# 1. Clone and setup
+git clone https://github.com/josetraderx/Financial-Data-Pipeline.git
+cd Financial-Data-Pipeline
+pip install -r requirements.txt
+
+# 2. Download Bitcoin data for the last 7 days (1-hour intervals)
+python -m Data_ETL.cli download --symbol BTCUSDT --timeframe 1h --days 7
+
+# 3. View your data
+ls data/processed/  # Your CSV files are here!
+```
+
+### Option 2: Python Quick Start (3 Lines of Code)
+```python
+from Data_ETL.pipelines.crypto_pipeline import CryptoPipeline
+
+# Download and process Bitcoin data
+pipeline = CryptoPipeline()
+data = pipeline.quick_download('BTCUSDT', timeframe='1h', days=7)
+print(f"✅ Downloaded {len(data)} Bitcoin price records!")
+```
+
+**Expected Output:**
+```
+✅ Downloaded 168 Bitcoin price records!
+   Timestamp         Open     High      Low    Close      Volume
+0  2024-08-04 00:00  65420.5  65580.0  65200.0  65350.2  1250.43
+1  2024-08-04 01:00  65350.2  65480.1  65180.5  65420.8  980.52
+...
+```
+
+### Option 3: One-Liner with File Export
+```python
+# Download data and save to CSV in one line
+CryptoPipeline().quick_download('ETHUSDT', '4h', 14).to_csv('ethereum_2weeks.csv')
+```
 
 ## Architecture
 
+### System Flow Diagram
+```mermaid
+graph TD
+    A[Data Sources] --> B[Data Providers]
+    B --> C[Data Validation]
+    C --> D[Data Processing]
+    D --> E[Data Splitting]
+    E --> F[Storage Layer]
+    F --> G[Export Formats]
+    
+    B1[Bybit API] --> B
+    B2[Binance API] --> B
+    B3[Yahoo Finance] --> B
+    
+    C --> C1[OHLCV Validation]
+    C --> C2[Outlier Detection]
+    C --> C3[Missing Data Handling]
+    
+    F --> F1[TimescaleDB]
+    F --> F2[PostgreSQL]
+    F --> F3[File System]
+    
+    G --> G1[Parquet]
+    G --> G2[CSV]
+    G --> G3[JSON]
+    
+    subgraph "Monitoring & Quality"
+        H[Data Quality Metrics]
+        I[Error Logging]
+        J[Performance Monitoring]
+    end
+    
+    D --> H
+    C --> I
+    F --> J
+```
+
+### Project Structure
 ```
 Data_ETL/
 ├── providers/          # Data provider implementations
@@ -77,6 +145,7 @@ Data_ETL/
 ├── validation/         # Data validation modules
 ├── tests/              # Test scripts and setup
 ├── notebooks/          # Jupyter notebooks and demos
+├── cli/                # Command line interface
 └── README.md           # Project documentation
 ```
 
@@ -111,59 +180,52 @@ Data_ETL/
 - **Error Handling**: Comprehensive error handling and logging
 - **Monitoring**: Built-in data quality monitoring
 
-## Quick Start
+## Installation & Setup
 
-### 1. Basic Setup
+### 1. Basic Installation
 
-```python
-from Data_ETL.pipelines.crypto_pipeline import CryptoPipeline
-from Data_ETL.pipelines.config_manager import PipelineConfig
+```bash
+# Clone the repository
+git clone https://github.com/josetraderx/Financial-Data-Pipeline.git
+cd Financial-Data-Pipeline
 
-# Load configuration
-config = PipelineConfig('config/pipeline_config.json')
+# Using Poetry (Recommended)
+poetry install
+poetry shell
 
-# Create pipeline
-pipeline = CryptoPipeline(config.get())
+# Or using pip
+pip install -r requirements.txt
 ```
 
-### 2. Simple Data Download and Processing
+### 2. Database Setup (Optional)
 
-```python
-# Configure pipeline run
-pipeline_config = config.create_pipeline_config(
-    provider='bybit',
-    symbol='BTCUSDT',
-    timeframe='1h',
-    days_back=30,
-    save_files=True,
-    store_db=False
-)
+#### PostgreSQL + TimescaleDB Installation
+```bash
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
+sudo apt-get install timescaledb-postgresql
 
-# Run pipeline
-results = pipeline.run_pipeline(pipeline_config)
+# macOS with Homebrew
+brew install postgresql timescaledb
+
+# Create database
+sudo -u postgres createdb exodus_data
+sudo -u postgres psql -d exodus_data -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
 ```
 
-### 3. Advanced Pipeline with Database Storage
+#### Database User Setup
+```sql
+-- Connect to PostgreSQL as superuser
+sudo -u postgres psql
 
-```python
-# Configure advanced pipeline
-pipeline_config = config.create_pipeline_config(
-    provider='bybit',
-    symbol='ETHUSDT',
-    timeframe='4h',
-    days_back=30,
-    splits={
-        'train_test_split': {
-            'test_size': 0.2,
-            'method': 'chronological'
-        }
-    },
-    store_db=True,
-    save_files=True
-)
+-- Create user and database
+CREATE USER exodus_user WITH PASSWORD 'your_password';
+CREATE DATABASE exodus_data OWNER exodus_user;
+GRANT ALL PRIVILEGES ON DATABASE exodus_data TO exodus_user;
 
-# Run pipeline
-results = pipeline.run_pipeline(pipeline_config)
+-- Enable TimescaleDB extension
+\c exodus_data
+CREATE EXTENSION IF NOT EXISTS timescaledb;
 ```
 
 ## Configuration
@@ -174,7 +236,7 @@ results = pipeline.run_pipeline(pipeline_config)
 export DB_HOST=localhost
 export DB_PORT=5432
 export DB_NAME=exodus_data
-export DB_USER=postgres
+export DB_USER=exodus_user
 export DB_PASSWORD=your_password
 
 # Bybit API Configuration
@@ -191,7 +253,7 @@ export BYBIT_TESTNET=true
     "host": "localhost",
     "port": 5432,
     "database": "exodus_data",
-    "user": "postgres",
+    "user": "exodus_user",
     "password": "your_password"
   },
   "providers": {
@@ -383,6 +445,53 @@ See `Data_ETL/pipelines/example_usage.py` for complete working examples includin
 3. **Metadata Management**: Metadata operations and queries
 4. **Data Quality Analysis**: Quality assessment and reporting
 
+### Basic Pipeline Example
+```python
+from Data_ETL.pipelines.crypto_pipeline import CryptoPipeline
+from Data_ETL.pipelines.config_manager import PipelineConfig
+
+# Load configuration
+config = PipelineConfig('config/pipeline_config.json')
+
+# Create pipeline
+pipeline = CryptoPipeline(config.get())
+
+# Configure pipeline run
+pipeline_config = config.create_pipeline_config(
+    provider='bybit',
+    symbol='BTCUSDT',
+    timeframe='1h',
+    days_back=30,
+    save_files=True,
+    store_db=False
+)
+
+# Run pipeline
+results = pipeline.run_pipeline(pipeline_config)
+```
+
+### Advanced Pipeline with Database Storage
+```python
+# Configure advanced pipeline
+pipeline_config = config.create_pipeline_config(
+    provider='bybit',
+    symbol='ETHUSDT',
+    timeframe='4h',
+    days_back=30,
+    splits={
+        'train_test_split': {
+            'test_size': 0.2,
+            'method': 'chronological'
+        }
+    },
+    store_db=True,
+    save_files=True
+)
+
+# Run pipeline
+results = pipeline.run_pipeline(pipeline_config)
+```
+
 ### Running Examples
 ```bash
 # Run all examples
@@ -411,6 +520,134 @@ python Data_ETL/pipelines/config_manager.py
 2. Add configuration options
 3. Integrate with pipeline storage system
 
+## Frequently Asked Questions (FAQ)
+
+### General Questions
+
+**Q: What is the minimum Python version required?**
+A: Python 3.8 or higher is required. We recommend Python 3.9+ for best performance.
+
+**Q: Do I need a database to use this pipeline?**
+A: No, the database is optional. You can use file-based storage (CSV, Parquet, JSON) without any database setup.
+
+**Q: Can I use this for live trading?**
+A: This is primarily a data pipeline for research and analysis. While it can provide real-time data, it's not designed for high-frequency trading.
+
+### Installation & Setup
+
+**Q: I'm getting import errors after installation**
+A: Make sure you're in the correct virtual environment and all dependencies are installed:
+```bash
+pip install -r requirements.txt
+# or
+poetry install
+```
+
+**Q: How do I set up the database?**
+A: Follow the [Installation & Setup](#installation--setup) section. For testing, you can skip the database and use file storage.
+
+**Q: What if I don't have TimescaleDB?**
+A: You can use regular PostgreSQL, but you'll miss out on time-series optimizations. File storage is also available.
+
+### Configuration
+
+**Q: Where do I put my API keys?**
+A: Use environment variables or the configuration file. Never commit API keys to version control:
+```bash
+export BYBIT_API_KEY=your_key_here
+export BYBIT_API_SECRET=your_secret_here
+```
+
+**Q: How do I configure different timeframes?**
+A: Supported timeframes include: `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `6h`, `12h`, `1d`, `1w`
+
+**Q: Can I download data for multiple symbols at once?**
+A: Yes, use the batch processing features:
+```python
+symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT']
+for symbol in symbols:
+    pipeline.quick_download(symbol, '1h', 30)
+```
+
+### Data Quality & Validation
+
+**Q: What happens if my data has missing values?**
+A: The validator can handle missing values through interpolation, forward fill, or removal based on your configuration.
+
+**Q: How do I interpret the quality score?**
+A: Quality scores range from 0-1:
+- 0.9-1.0: Excellent quality
+- 0.8-0.9: Good quality
+- 0.7-0.8: Acceptable quality
+- <0.7: Poor quality, needs attention
+
+**Q: Can I add custom validation rules?**
+A: Yes, extend the `EnhancedDataValidator` class and add your custom methods.
+
+### Performance & Scaling
+
+**Q: How much data can the pipeline handle?**
+A: Tested with millions of records. Use chunked processing for very large datasets.
+
+**Q: The pipeline is running slowly, what can I do?**
+A: 
+- Reduce the date range
+- Use larger timeframes (e.g., 4h instead of 1m)
+- Enable database storage for better performance
+- Check your internet connection and API rate limits
+
+**Q: Can I run multiple pipelines in parallel?**
+A: Yes, but be mindful of API rate limits. Use different API keys or implement proper rate limiting.
+
+### Troubleshooting Data Issues
+
+**Q: I'm getting "Invalid OHLCV relationship" errors**
+A: This indicates data quality issues. Check:
+- High >= Low
+- Open, High, Low, Close > 0
+- Volume >= 0
+
+**Q: Some data points are missing**
+A: This is normal for some exchanges during low-activity periods. The validator can interpolate missing values.
+
+**Q: Data looks incorrect/unexpected**
+A: Enable debug mode and check the validation report:
+```python
+results = pipeline.run_pipeline(config, debug=True)
+print(results['validation_report'])
+```
+
+### API & Rate Limiting
+
+**Q: I'm getting rate limit errors**
+A: 
+- Use testnet for development
+- Implement proper delays between requests
+- Consider using a higher-tier API plan
+- Check your API key permissions
+
+**Q: Which exchanges are supported?**
+A: Currently supports Bybit with plans for Binance, Coinbase, and others. Check the providers directory for updates.
+
+**Q: Can I use this with paper trading APIs?**
+A: Yes, set `testnet=true` in your configuration for supported exchanges.
+
+### Development & Contributing
+
+**Q: How do I add support for a new exchange?**
+A: 
+1. Create a new provider class in `providers/crypto/`
+2. Implement the required interface methods
+3. Add configuration options
+4. Write tests
+5. Submit a pull request
+
+**Q: How do I report bugs or request features?**
+A: Open an issue on GitHub with detailed information about the problem or feature request.
+
+**Q: Is there a development roadmap?**
+A: Check the project's GitHub issues and milestones for planned features and improvements.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -435,6 +672,21 @@ python Data_ETL/pipelines/config_manager.py
    - Use chunked processing
    - Monitor memory usage
 
+5. **Import Errors**
+   ```bash
+   # Ensure proper installation
+   pip install -r requirements.txt
+   
+   # Check Python path
+   export PYTHONPATH="${PYTHONPATH}:/path/to/Financial-Data-Pipeline"
+   ```
+
+6. **Configuration Issues**
+   ```bash
+   # Verify configuration file exists and is valid JSON
+   python -c "import json; print(json.load(open('config/pipeline_config.json')))"
+   ```
+
 ### Debug Mode
 ```python
 # Enable debug logging
@@ -445,6 +697,12 @@ logging.basicConfig(level=logging.DEBUG)
 results = pipeline.run_pipeline(config, debug=True)
 ```
 
+### Getting Help
+- Check the [FAQ](#frequently-asked-questions-faq) section
+- Review error messages and logs carefully
+- Search existing GitHub issues
+- Create a new issue with detailed error information
+
 ## Contributing
 
 1. Follow the existing code structure and patterns
@@ -453,6 +711,32 @@ results = pipeline.run_pipeline(config, debug=True)
 4. Ensure backward compatibility
 5. Follow Python best practices and type hints
 
+### Development Setup
+```bash
+# Clone and setup development environment
+git clone https://github.com/josetraderx/Financial-Data-Pipeline.git
+cd Financial-Data-Pipeline
+
+# Install development dependencies
+poetry install --dev
+poetry shell
+
+# Run tests
+pytest
+
+# Run linting
+flake8 Data_ETL/
+black Data_ETL/
+```
+
+### Pull Request Process
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add/update tests
+5. Update documentation
+6. Submit pull request
+
 ## License
 
-This module is part of the Exodus v2025 project and follows the project's licensing terms.
+This module is part of the Exodus v2025 project and follows the project's licensing terms (MIT License).
