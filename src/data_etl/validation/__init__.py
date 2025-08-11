@@ -5,4 +5,4 @@ Handles data validation, cleaning and preprocessing.
 
 from .data_processor import DataProcessor
 
-__all__ = ['DataProcessor']
+__all__ = ["DataProcessor"]

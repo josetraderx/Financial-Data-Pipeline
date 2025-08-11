@@ -42,7 +42,7 @@ class DataArchiver:
         df: pd.DataFrame,
         symbol: str,
         timeframe: str,
-        compression: str | None = 'gzip'
+        compression: str | None = "gzip",
     ) -> Path:
         """
         Archive market data to compressed parquet files.
@@ -80,7 +80,7 @@ class DataArchiver:
         symbol: str,
         start_date: str | datetime,
         end_date: str | datetime,
-        timeframe: str
+        timeframe: str,
     ) -> pd.DataFrame:
         """
         Retrieve data from archives.
@@ -98,7 +98,7 @@ class DataArchiver:
         end_date = pd.to_datetime(end_date)
 
         # Generate list of year/month combinations to check
-        dates = pd.date_range(start_date, end_date, freq='M')
+        dates = pd.date_range(start_date, end_date, freq="M")
         dfs = []
 
         for date in dates:
@@ -124,9 +124,7 @@ class DataArchiver:
         return result[mask]
 
     def list_available_archives(
-        self,
-        symbol: str | None = None,
-        year: int | None = None
+        self, symbol: str | None = None, year: int | None = None
     ) -> list[Path]:
         """
         List available archived files.

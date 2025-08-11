@@ -30,40 +30,37 @@ class PipelineConfig:
     def _load_default_config(self) -> dict[str, Any]:
         """Load default configuration."""
         return {
-            'data_dir': 'data/processed',
-            'db_config': {
-                'host': os.getenv('DB_HOST', 'localhost'),
-                'port': int(os.getenv('DB_PORT', 5432)),
-                'database': os.getenv('DB_NAME', 'exodus_data'),
-                'user': os.getenv('DB_USER', 'postgres'),
-                'password': os.getenv('DB_PASSWORD', 'your_password')
+            "data_dir": "data/processed",
+            "db_config": {
+                "host": os.getenv("DB_HOST", "localhost"),
+                "port": int(os.getenv("DB_PORT", 5432)),
+                "database": os.getenv("DB_NAME", "exodus_data"),
+                "user": os.getenv("DB_USER", "postgres"),
+                "password": os.getenv("DB_PASSWORD", "your_password"),
             },
-            'providers': {
-                'bybit': {
-                    'api_key': os.getenv('BYBIT_API_KEY', 'your_api_key'),
-                    'api_secret': os.getenv('BYBIT_API_SECRET', 'your_api_secret'),
-                    'testnet': os.getenv('BYBIT_TESTNET', 'true').lower() == 'true'
+            "providers": {
+                "bybit": {
+                    "api_key": os.getenv("BYBIT_API_KEY", "your_api_key"),
+                    "api_secret": os.getenv("BYBIT_API_SECRET", "your_api_secret"),
+                    "testnet": os.getenv("BYBIT_TESTNET", "true").lower() == "true",
                 }
             },
-            'validation_config': {
-                'handle_missing': 'interpolate',
-                'outlier_method': 'iqr',
-                'outlier_threshold': 1.5,
-                'min_records': 100,
-                'max_gap_hours': 24
+            "validation_config": {
+                "handle_missing": "interpolate",
+                "outlier_method": "iqr",
+                "outlier_threshold": 1.5,
+                "min_records": 100,
+                "max_gap_hours": 24,
             },
-            'split_config': {
-                'train_test_split': {
-                    'test_size': 0.2,
-                    'method': 'chronological'
-                }
+            "split_config": {
+                "train_test_split": {"test_size": 0.2, "method": "chronological"}
             },
-            'storage_config': {
-                'save_files': True,
-                'store_db': True,
-                'file_format': 'parquet',
-                'compression': 'snappy'
-            }
+            "storage_config": {
+                "save_files": True,
+                "store_db": True,
+                "file_format": "parquet",
+                "compression": "snappy",
+            },
         }
 
     def _load_from_file(self, config_file: str) -> None:
@@ -77,9 +74,14 @@ class PipelineConfig:
 
     def _merge_config(self, new_config: dict[str, Any]) -> None:
         """Merge new configuration with existing one."""
+
         def merge_dict(base: dict[str, Any], update: dict[str, Any]) -> None:
             for key, value in update.items():
-                if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                if (
+                    key in base
+                    and isinstance(base[key], dict)
+                    and isinstance(value, dict)
+                ):
                     merge_dict(base[key], value)
                 else:
                     base[key] = value
@@ -99,7 +101,7 @@ class PipelineConfig:
         if key is None:
             return self.config
 
-        keys = key.split('.')
+        keys = key.split(".")
         value = self.config
 
         for k in keys:
@@ -118,7 +120,7 @@ class PipelineConfig:
             key: Configuration key (dot notation supported)
             value: Value to set
         """
-        keys = key.split('.')
+        keys = key.split(".")
         config = self.config
 
         for k in keys[:-1]:
@@ -143,11 +145,12 @@ class PipelineConfig:
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(self.config, f, indent=2, default=str)
 
-    def create_pipeline_config(self, provider: str, symbol: str, timeframe: str,
-                              days_back: int = 30, **kwargs) -> dict[str, Any]:
+    def create_pipeline_config(
+        self, provider: str, symbol: str, timeframe: str, days_back: int = 30, **kwargs
+    ) -> dict[str, Any]:
         """
         Create a pipeline configuration for a specific symbol.
 
@@ -162,14 +165,14 @@ class PipelineConfig:
             Pipeline configuration dictionary
         """
         config = {
-            'provider': provider,
-            'symbol': symbol,
-            'timeframe': timeframe,
-            'start_date': datetime.now() - timedelta(days=days_back),
-            'end_date': datetime.now(),
-            'splits': self.get('split_config') or {},
-            'save_files': self.get('storage_config.save_files'),
-            'store_db': self.get('storage_config.store_db')
+            "provider": provider,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "start_date": datetime.now() - timedelta(days=days_back),
+            "end_date": datetime.now(),
+            "splits": self.get("split_config") or {},
+            "save_files": self.get("storage_config.save_files"),
+            "store_db": self.get("storage_config.store_db"),
         }
 
         # Merge any additional kwargs
@@ -184,46 +187,48 @@ class PipelineConfig:
         Returns:
             Dictionary with validation results
         """
-        issues = {
-            'errors': [],
-            'warnings': [],
-            'is_valid': True
-        }
+        issues = {"errors": [], "warnings": [], "is_valid": True}
 
         # Check database configuration
-        db_config = self.get('db_config')
+        db_config = self.get("db_config")
         if not db_config:
-            issues['errors'].append("Database configuration missing")
-            issues['is_valid'] = False
+            issues["errors"].append("Database configuration missing")
+            issues["is_valid"] = False
         else:
-            required_db_fields = ['host', 'port', 'database', 'user', 'password']
+            required_db_fields = ["host", "port", "database", "user", "password"]
             for field in required_db_fields:
                 if not db_config.get(field):
-                    issues['errors'].append(f"Database field '{field}' missing")
-                    issues['is_valid'] = False
+                    issues["errors"].append(f"Database field '{field}' missing")
+                    issues["is_valid"] = False
 
         # Check provider configurations
-        providers = self.get('providers')
+        providers = self.get("providers")
         if not providers:
-            issues['warnings'].append("No data providers configured")
+            issues["warnings"].append("No data providers configured")
         else:
             for provider_name, provider_config in providers.items():
-                if provider_name == 'bybit':
-                    if not provider_config.get('api_key') or provider_config.get('api_key') == 'your_api_key':
-                        issues['warnings'].append("Bybit API key not configured")
-                    if not provider_config.get('api_secret') or provider_config.get('api_secret') == 'your_api_secret':
-                        issues['warnings'].append("Bybit API secret not configured")
+                if provider_name == "bybit":
+                    if (
+                        not provider_config.get("api_key")
+                        or provider_config.get("api_key") == "your_api_key"
+                    ):
+                        issues["warnings"].append("Bybit API key not configured")
+                    if (
+                        not provider_config.get("api_secret")
+                        or provider_config.get("api_secret") == "your_api_secret"
+                    ):
+                        issues["warnings"].append("Bybit API secret not configured")
 
         # Check data directory
-        data_dir = self.get('data_dir')
+        data_dir = self.get("data_dir")
         if data_dir:
             data_path = Path(data_dir)
             if not data_path.exists():
                 try:
                     data_path.mkdir(parents=True, exist_ok=True)
                 except Exception as e:
-                    issues['errors'].append(f"Cannot create data directory: {e}")
-                    issues['is_valid'] = False
+                    issues["errors"].append(f"Cannot create data directory: {e}")
+                    issues["is_valid"] = False
 
         return issues
 
@@ -232,7 +237,7 @@ class PipelineConfig:
 default_config = PipelineConfig()
 
 
-def create_example_config(config_file: str = 'config/pipeline_config.json') -> None:
+def create_example_config(config_file: str = "config/pipeline_config.json") -> None:
     """
     Create an example configuration file.
 
@@ -242,25 +247,28 @@ def create_example_config(config_file: str = 'config/pipeline_config.json') -> N
     config = PipelineConfig()
 
     # Set some example values
-    config.set('providers.bybit.api_key', 'your_bybit_api_key_here')
-    config.set('providers.bybit.api_secret', 'your_bybit_api_secret_here')
-    config.set('providers.bybit.testnet', True)
+    config.set("providers.bybit.api_key", "your_bybit_api_key_here")
+    config.set("providers.bybit.api_secret", "your_bybit_api_secret_here")
+    config.set("providers.bybit.testnet", True)
 
-    config.set('db_config.host', 'localhost')
-    config.set('db_config.database', 'exodus_data')
-    config.set('db_config.user', 'postgres')
-    config.set('db_config.password', 'your_password_here')
+    config.set("db_config.host", "localhost")
+    config.set("db_config.database", "exodus_data")
+    config.set("db_config.user", "postgres")
+    config.set("db_config.password", "your_password_here")
 
-    config.set('data_dir', 'data/processed')
+    config.set("data_dir", "data/processed")
 
     # Add some comments as additional metadata
-    config.set('_comments', {
-        'providers': 'Configure your data provider API credentials here',
-        'db_config': 'PostgreSQL/TimescaleDB connection parameters',
-        'data_dir': 'Directory for storing processed data files',
-        'validation_config': 'Data validation and cleaning parameters',
-        'split_config': 'Data splitting configurations for train/test sets'
-    })
+    config.set(
+        "_comments",
+        {
+            "providers": "Configure your data provider API credentials here",
+            "db_config": "PostgreSQL/TimescaleDB connection parameters",
+            "data_dir": "Directory for storing processed data files",
+            "validation_config": "Data validation and cleaning parameters",
+            "split_config": "Data splitting configurations for train/test sets",
+        },
+    )
 
     config.save(config_file)
     print(f"Example configuration saved to {config_file}")
@@ -276,7 +284,7 @@ if __name__ == "__main__":
 
     print("Configuration validation:")
     print(f"Valid: {validation_result['is_valid']}")
-    if validation_result['errors']:
+    if validation_result["errors"]:
         print(f"Errors: {validation_result['errors']}")
-    if validation_result['warnings']:
+    if validation_result["warnings"]:
         print(f"Warnings: {validation_result['warnings']}")

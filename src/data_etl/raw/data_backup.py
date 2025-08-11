@@ -34,7 +34,7 @@ class DataBackup:
 
     def save_metadata(self):
         """Save backup metadata to JSON file."""
-        with open(self.metadata_file, 'w') as f:
+        with open(self.metadata_file, "w") as f:
             json.dump(self.metadata, f, indent=4)
 
     def calculate_checksum(self, file_path: Path) -> str:
@@ -54,9 +54,7 @@ class DataBackup:
         return sha256_hash.hexdigest()
 
     def create_backup(
-        self,
-        source_path: str | Path,
-        description: str | None = None
+        self, source_path: str | Path, description: str | None = None
     ) -> dict:
         """
         Create a backup of a data file or directory.
@@ -89,12 +87,12 @@ class DataBackup:
 
         # Create metadata
         metadata = {
-            'timestamp': timestamp,
-            'source_path': str(source_path),
-            'backup_path': str(backup_path),
-            'description': description,
-            'is_directory': is_directory,
-            'checksum': checksum
+            "timestamp": timestamp,
+            "source_path": str(source_path),
+            "backup_path": str(backup_path),
+            "description": description,
+            "is_directory": is_directory,
+            "checksum": checksum,
         }
 
         # Update metadata storage
@@ -104,9 +102,7 @@ class DataBackup:
         return metadata
 
     def restore_backup(
-        self,
-        timestamp: str,
-        restore_path: str | Path | None = None
+        self, timestamp: str, restore_path: str | Path | None = None
     ) -> bool:
         """
         Restore data from a backup.
@@ -122,7 +118,7 @@ class DataBackup:
             raise ValueError(f"No backup found for timestamp: {timestamp}")
 
         backup_info = self.metadata[timestamp]
-        source = Path(backup_info['backup_path'])
+        source = Path(backup_info["backup_path"])
 
         if not source.exists():
             raise FileNotFoundError(f"Backup files not found: {source}")
@@ -131,10 +127,10 @@ class DataBackup:
         if restore_path:
             target = Path(restore_path)
         else:
-            target = Path(backup_info['source_path'])
+            target = Path(backup_info["source_path"])
 
         # Perform restore
-        if backup_info['is_directory']:
+        if backup_info["is_directory"]:
             if target.exists():
                 shutil.rmtree(target)
             shutil.copytree(source, target)
@@ -143,17 +139,15 @@ class DataBackup:
             shutil.copy2(source, target)
 
             # Verify checksum if available
-            if backup_info['checksum']:
+            if backup_info["checksum"]:
                 restored_checksum = self.calculate_checksum(target)
-                if restored_checksum != backup_info['checksum']:
+                if restored_checksum != backup_info["checksum"]:
                     raise ValueError("Checksum verification failed after restore")
 
         return True
 
     def list_backups(
-        self,
-        start_date: str | None = None,
-        end_date: str | None = None
+        self, start_date: str | None = None, end_date: str | None = None
     ) -> list[dict]:
         """
         List available backups with optional date filtering.
@@ -171,14 +165,16 @@ class DataBackup:
             if start_date or end_date:
                 backup_date = datetime.strptime(timestamp, "%Y%m%d_%H%M%S")
 
-                if start_date and backup_date < datetime.strptime(start_date, "%Y-%m-%d"):
+                if start_date and backup_date < datetime.strptime(
+                    start_date, "%Y-%m-%d"
+                ):
                     continue
                 if end_date and backup_date > datetime.strptime(end_date, "%Y-%m-%d"):
                     continue
 
             backups.append(metadata)
 
-        return sorted(backups, key=lambda x: x['timestamp'], reverse=True)
+        return sorted(backups, key=lambda x: x["timestamp"], reverse=True)
 
     def verify_backup(self, timestamp: str) -> bool:
         """
@@ -194,21 +190,19 @@ class DataBackup:
             raise ValueError(f"No backup found for timestamp: {timestamp}")
 
         backup_info = self.metadata[timestamp]
-        backup_path = Path(backup_info['backup_path'])
+        backup_path = Path(backup_info["backup_path"])
 
         if not backup_path.exists():
             return False
 
-        if not backup_info['is_directory'] and backup_info['checksum']:
+        if not backup_info["is_directory"] and backup_info["checksum"]:
             current_checksum = self.calculate_checksum(backup_path)
-            return current_checksum == backup_info['checksum']
+            return current_checksum == backup_info["checksum"]
 
         return True
 
     def cleanup_old_backups(
-        self,
-        keep_days: int = 30,
-        minimum_keep: int = 5
+        self, keep_days: int = 30, minimum_keep: int = 5
     ) -> list[str]:
         """
         Remove old backups while keeping a minimum number.
@@ -224,11 +218,7 @@ class DataBackup:
         removed = []
 
         # Sort backups by date
-        sorted_backups = sorted(
-            self.metadata.items(),
-            key=lambda x: x[0],
-            reverse=True
-        )
+        sorted_backups = sorted(self.metadata.items(), key=lambda x: x[0], reverse=True)
 
         # Always keep the minimum number of backups
         backups_to_check = sorted_backups[minimum_keep:]
@@ -238,11 +228,11 @@ class DataBackup:
             days_old = (current_date - backup_date).days
 
             if days_old > keep_days:
-                backup_path = Path(metadata['backup_path'])
+                backup_path = Path(metadata["backup_path"])
 
                 # Remove backup files
                 if backup_path.exists():
-                    if metadata['is_directory']:
+                    if metadata["is_directory"]:
                         shutil.rmtree(backup_path)
                     else:
                         backup_path.unlink()

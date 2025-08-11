@@ -11,19 +11,20 @@ from data_etl.processing.enhanced_metadata_manager import EnhancedMetadataManage
 # Logging setup adaptado para Exodus v2025
 try:
     from data_etl.utils.logging import get_logger
+
     logger = get_logger(__name__)
 except ImportError:
     # Fallback si no encuentra el módulo
-    LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "logs")
+    LOG_DIR = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        "logs",
+    )
     os.makedirs(LOG_DIR, exist_ok=True)
     LOG_FILE = os.path.join(LOG_DIR, "bybit_data.log")
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(LOG_FILE),
-            logging.StreamHandler()
-        ]
+        handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
     )
     logger = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ class BybitDownloader:
             num_records=len(df),
             script_version="1.0.0",  # Versión de tu script
             data_source="bybit",
-            df=df
+            df=df,
         )
 
         # TODO: Store data in TimescaleDB (comentado hasta que tengamos tsdb_manager)

@@ -2,7 +2,6 @@
 Timeframe aggregation module for resampling market data.
 """
 
-
 import pandas as pd
 
 
@@ -10,21 +9,21 @@ class TimeframeAggregator:
     """Handles timeframe aggregation and resampling of OHLCV data."""
 
     VALID_TIMEFRAMES = {
-        '1m': '1T',
-        '3m': '3T',
-        '5m': '5T',
-        '15m': '15T',
-        '30m': '30T',
-        '1h': '1H',
-        '2h': '2H',
-        '4h': '4H',
-        '6h': '6H',
-        '8h': '8H',
-        '12h': '12H',
-        '1d': '1D',
-        '3d': '3D',
-        '1w': '1W',
-        '1M': '1M'
+        "1m": "1T",
+        "3m": "3T",
+        "5m": "5T",
+        "15m": "15T",
+        "30m": "30T",
+        "1h": "1H",
+        "2h": "2H",
+        "4h": "4H",
+        "6h": "6H",
+        "8h": "8H",
+        "12h": "12H",
+        "1d": "1D",
+        "3d": "3D",
+        "1w": "1W",
+        "1M": "1M",
     }
 
     @classmethod
@@ -39,7 +38,9 @@ class TimeframeAggregator:
             str: Pandas frequency string
         """
         if timeframe not in cls.VALID_TIMEFRAMES:
-            raise ValueError(f"Invalid timeframe. Valid options are: {list(cls.VALID_TIMEFRAMES.keys())}")
+            raise ValueError(
+                f"Invalid timeframe. Valid options are: {list(cls.VALID_TIMEFRAMES.keys())}"
+            )
         return cls.VALID_TIMEFRAMES[timeframe]
 
     @staticmethod
@@ -62,22 +63,24 @@ class TimeframeAggregator:
 
         # Define aggregation functions for OHLCV
         agg_dict = {
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'sum'
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
         }
 
         # Perform resampling
         resampled = df.resample(freq).agg(agg_dict)
 
         # Forward fill missing values (if any)
-        resampled = resampled.fillna(method='ffill')
+        resampled = resampled.fillna(method="ffill")
 
         return resampled
 
-    def resample_timeframe(self, df: pd.DataFrame, target_timeframe: str) -> pd.DataFrame:
+    def resample_timeframe(
+        self, df: pd.DataFrame, target_timeframe: str
+    ) -> pd.DataFrame:
         """
         Resample OHLCV data to target timeframe.
 
@@ -92,9 +95,7 @@ class TimeframeAggregator:
         return self.aggregate_ohlcv(df, freq)
 
     def generate_multiple_timeframes(
-        self,
-        df: pd.DataFrame,
-        timeframes: list
+        self, df: pd.DataFrame, timeframes: list
     ) -> dict[str, pd.DataFrame]:
         """
         Generate multiple timeframe versions of the input data.
