@@ -28,7 +28,7 @@ jobs:
             echo "Error: no requirements.txt, setup.py or pyproject.toml found at repo root."
             exit 1
           fi
-          pip install ruff==0.4.4 black==24.4.2 pytest==8.2.0 pytest-cov
+          pip install ruff==0.12.8 black==25.1.0 pytest==8.4.1 pytest-cov
 
       - name: Lint (obligatorio)
         run: |
