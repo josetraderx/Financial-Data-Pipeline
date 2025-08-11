@@ -21,12 +21,12 @@ from data_etl.storage.timeseries_db import TimeSeriesDB
 from data_etl.validation.data_processor import DataProcessor
 
 __all__ = [
-    'TimeSeriesDB',
-    'DataStorageManager',
-    'BybitDownloader',
-    'DataNormalizer',
-    'TechnicalIndicators',
-    'TimeframeAggregator',
-    'DataProcessor',
-    'CryptoPipeline'
+    "TimeSeriesDB",
+    "DataStorageManager",
+    "BybitDownloader",
+    "DataNormalizer",
+    "TechnicalIndicators",
+    "TimeframeAggregator",
+    "DataProcessor",
+    "CryptoPipeline",
 ]

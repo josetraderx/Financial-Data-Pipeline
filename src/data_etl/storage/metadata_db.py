@@ -150,23 +150,27 @@ class MetadataDB:
         cursor = self.connection.cursor()
 
         # Check if dataset already exists
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id FROM dataset_metadata
             WHERE dataset_name = %s AND provider = %s
             AND COALESCE(symbol, '') = COALESCE(%s, '')
             AND COALESCE(timeframe, '') = COALESCE(%s, '')
-        """, (
-            metadata.get('dataset_name'),
-            metadata.get('provider'),
-            metadata.get('symbol'),
-            metadata.get('timeframe')
-        ))
+        """,
+            (
+                metadata.get("dataset_name"),
+                metadata.get("provider"),
+                metadata.get("symbol"),
+                metadata.get("timeframe"),
+            ),
+        )
 
         existing = cursor.fetchone()
 
         if existing:
             # Update existing record
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE dataset_metadata SET
                     start_date = %s,
                     end_date = %s,
@@ -177,37 +181,42 @@ class MetadataDB:
                     metadata_json = %s
                 WHERE id = %s
                 RETURNING id
-            """, (
-                metadata.get('start_date'),
-                metadata.get('end_date'),
-                metadata.get('total_records'),
-                metadata.get('file_path'),
-                metadata.get('file_size_bytes'),
-                Json(metadata.get('additional_metadata', {})),
-                existing[0]
-            ))
+            """,
+                (
+                    metadata.get("start_date"),
+                    metadata.get("end_date"),
+                    metadata.get("total_records"),
+                    metadata.get("file_path"),
+                    metadata.get("file_size_bytes"),
+                    Json(metadata.get("additional_metadata", {})),
+                    existing[0],
+                ),
+            )
             dataset_id = cursor.fetchone()[0]
         else:
             # Insert new record
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO dataset_metadata (
                     dataset_name, provider, symbol, timeframe,
                     start_date, end_date, total_records, file_path,
                     file_size_bytes, metadata_json
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (
-                metadata.get('dataset_name'),
-                metadata.get('provider'),
-                metadata.get('symbol'),
-                metadata.get('timeframe'),
-                metadata.get('start_date'),
-                metadata.get('end_date'),
-                metadata.get('total_records'),
-                metadata.get('file_path'),
-                metadata.get('file_size_bytes'),
-                Json(metadata.get('additional_metadata', {}))
-            ))
+            """,
+                (
+                    metadata.get("dataset_name"),
+                    metadata.get("provider"),
+                    metadata.get("symbol"),
+                    metadata.get("timeframe"),
+                    metadata.get("start_date"),
+                    metadata.get("end_date"),
+                    metadata.get("total_records"),
+                    metadata.get("file_path"),
+                    metadata.get("file_size_bytes"),
+                    Json(metadata.get("additional_metadata", {})),
+                ),
+            )
             dataset_id = cursor.fetchone()[0]
 
         self.connection.commit()
@@ -230,34 +239,38 @@ class MetadataDB:
 
         cursor = self.connection.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO validation_reports (
                 dataset_id, is_valid, total_records, valid_records,
                 invalid_records, missing_values, outliers_detected,
                 duplicates_found, validation_details, errors, warnings
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (
-            dataset_id,
-            report.get('is_valid', False),
-            report.get('total_records', 0),
-            report.get('valid_records', 0),
-            report.get('invalid_records', 0),
-            report.get('missing_values', 0),
-            report.get('outliers_detected', 0),
-            report.get('duplicates_found', 0),
-            Json(report.get('validation_details', {})),
-            Json(report.get('errors', [])),
-            Json(report.get('warnings', []))
-        ))
+        """,
+            (
+                dataset_id,
+                report.get("is_valid", False),
+                report.get("total_records", 0),
+                report.get("valid_records", 0),
+                report.get("invalid_records", 0),
+                report.get("missing_values", 0),
+                report.get("outliers_detected", 0),
+                report.get("duplicates_found", 0),
+                Json(report.get("validation_details", {})),
+                Json(report.get("errors", [])),
+                Json(report.get("warnings", [])),
+            ),
+        )
 
         report_id = cursor.fetchone()[0]
         self.connection.commit()
         logger.info(f"Validation report stored with ID: {report_id}")
         return report_id
 
-    def insert_data_lineage(self, source_id: int, target_id: int,
-                          transformation_type: str, details: dict[str, Any]) -> int:
+    def insert_data_lineage(
+        self, source_id: int, target_id: int, transformation_type: str, details: dict[str, Any]
+    ) -> int:
         """
         Insert data lineage record.
 
@@ -275,13 +288,16 @@ class MetadataDB:
 
         cursor = self.connection.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO data_lineage (
                 source_dataset_id, target_dataset_id,
                 transformation_type, transformation_details
             ) VALUES (%s, %s, %s, %s)
             RETURNING id
-        """, (source_id, target_id, transformation_type, Json(details)))
+        """,
+            (source_id, target_id, transformation_type, Json(details)),
+        )
 
         lineage_id = cursor.fetchone()[0]
         self.connection.commit()
@@ -302,18 +318,21 @@ class MetadataDB:
         cursor = self.connection.cursor()
 
         for metric_name, metric_value in metrics.items():
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO data_quality_metrics (
                     dataset_id, metric_name, metric_value
                 ) VALUES (%s, %s, %s)
-            """, (dataset_id, metric_name, metric_value))
+            """,
+                (dataset_id, metric_name, metric_value),
+            )
 
         self.connection.commit()
         logger.info(f"Quality metrics stored for dataset {dataset_id}")
 
-    def get_dataset_metadata(self, dataset_id: int | None = None,
-                           provider: str | None = None,
-                           symbol: str | None = None) -> list[dict[str, Any]]:
+    def get_dataset_metadata(
+        self, dataset_id: int | None = None, provider: str | None = None, symbol: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Retrieve dataset metadata.
 
@@ -363,11 +382,14 @@ class MetadataDB:
 
         cursor = self.connection.cursor(cursor_factory=RealDictCursor)
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT * FROM validation_reports
             WHERE dataset_id = %s
             ORDER BY validation_timestamp DESC
-        """, (dataset_id,))
+        """,
+            (dataset_id,),
+        )
 
         return [dict(row) for row in cursor.fetchall()]
 
@@ -387,29 +409,32 @@ class MetadataDB:
         cursor = self.connection.cursor(cursor_factory=RealDictCursor)
 
         # Get upstream lineage (sources)
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT l.*, dm.dataset_name as source_name
             FROM data_lineage l
             JOIN dataset_metadata dm ON l.source_dataset_id = dm.id
             WHERE l.target_dataset_id = %s
             ORDER BY l.created_at DESC
-        """, (dataset_id,))
+        """,
+            (dataset_id,),
+        )
         upstream = [dict(row) for row in cursor.fetchall()]
 
         # Get downstream lineage (targets)
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT l.*, dm.dataset_name as target_name
             FROM data_lineage l
             JOIN dataset_metadata dm ON l.target_dataset_id = dm.id
             WHERE l.source_dataset_id = %s
             ORDER BY l.created_at DESC
-        """, (dataset_id,))
+        """,
+            (dataset_id,),
+        )
         downstream = [dict(row) for row in cursor.fetchall()]
 
-        return {
-            'upstream': upstream,
-            'downstream': downstream
-        }
+        return {"upstream": upstream, "downstream": downstream}
 
     def get_quality_metrics(self, dataset_id: int) -> list[dict[str, Any]]:
         """
@@ -426,11 +451,14 @@ class MetadataDB:
 
         cursor = self.connection.cursor(cursor_factory=RealDictCursor)
 
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT * FROM data_quality_metrics
             WHERE dataset_id = %s
             ORDER BY calculated_at DESC
-        """, (dataset_id,))
+        """,
+            (dataset_id,),
+        )
 
         return [dict(row) for row in cursor.fetchall()]
 
@@ -448,7 +476,7 @@ class MetadataDB:
 
         # Total datasets
         cursor.execute("SELECT COUNT(*) as total_datasets FROM dataset_metadata")
-        total_datasets = cursor.fetchone()['total_datasets']
+        total_datasets = cursor.fetchone()["total_datasets"]
 
         # Datasets by provider
         cursor.execute("""
@@ -473,9 +501,9 @@ class MetadataDB:
         validation_status = dict(cursor.fetchone())
 
         return {
-            'total_datasets': total_datasets,
-            'by_provider': by_provider,
-            'validation_status': validation_status
+            "total_datasets": total_datasets,
+            "by_provider": by_provider,
+            "validation_status": validation_status,
         }
 
     def __enter__(self):

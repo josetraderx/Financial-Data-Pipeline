@@ -17,13 +17,16 @@ def get_logger(name: str = "app", level: str = None) -> logging.Logger:
     ch.setFormatter(fmt)
     logger.addHandler(ch)
     logger.setLevel(level or os.getenv("LOG_LEVEL", "INFO"))
+
     # Add run_id to every record
     def add_run_id(record):
         if not hasattr(record, "run_id"):
             record.run_id = os.getenv("RUN_ID", "local")
         return True
+
     logger.addFilter(add_run_id)
     return logger
+
 
 @contextmanager
 def timed(logger: logging.Logger, msg: str):

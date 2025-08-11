@@ -42,7 +42,7 @@ class DataProcessor:
         if df.empty:
             raise ValueError("Empty DataFrame provided")
 
-        required_columns = ['open', 'high', 'low', 'close', 'volume']
+        required_columns = ["open", "high", "low", "close", "volume"]
         if not all(col in df.columns for col in required_columns):
             raise ValueError(f"Missing required columns. Expected: {required_columns}")
 
@@ -57,12 +57,12 @@ class DataProcessor:
 
         # Validate price relationships
         invalid_rows = (
-            (df['high'] < df['low']) |
-            (df['high'] < df['open']) |
-            (df['high'] < df['close']) |
-            (df['low'] > df['open']) |
-            (df['low'] > df['close']) |
-            (df['volume'] < 0)
+            (df["high"] < df["low"])
+            | (df["high"] < df["open"])
+            | (df["high"] < df["close"])
+            | (df["low"] > df["open"])
+            | (df["low"] > df["close"])
+            | (df["volume"] < 0)
         )
 
         if invalid_rows.any():
@@ -82,10 +82,7 @@ class DataProcessor:
         return df
 
     def clean_outliers(
-        self,
-        df: pd.DataFrame,
-        threshold: float = 3.0,
-        method: str = 'zscore'
+        self, df: pd.DataFrame, threshold: float = 3.0, method: str = "zscore"
     ) -> pd.DataFrame:
         """
         Clean outliers from OHLCV data.
@@ -99,10 +96,10 @@ class DataProcessor:
             pd.DataFrame: Data with outliers removed or replaced
         """
         df = df.copy()
-        price_columns = ['open', 'high', 'low', 'close']
+        price_columns = ["open", "high", "low", "close"]
 
-        for col in price_columns + ['volume']:
-            if method == 'zscore':
+        for col in price_columns + ["volume"]:
+            if method == "zscore":
                 z_scores = np.abs((df[col] - df[col].mean()) / df[col].std())
                 outliers = z_scores > threshold
             else:  # IQR method
@@ -124,10 +121,7 @@ class DataProcessor:
         return df
 
     def validate_and_clean(
-        self,
-        df: pd.DataFrame,
-        clean_outliers: bool = True,
-        outlier_threshold: float = 3.0
+        self, df: pd.DataFrame, clean_outliers: bool = True, outlier_threshold: float = 3.0
     ) -> pd.DataFrame:
         """
         Complete validation and cleaning pipelines.

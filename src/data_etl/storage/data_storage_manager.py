@@ -22,28 +22,13 @@ class DataStorageManager:
     """
 
     COMPRESSION_METHODS = {
-        'zlib': {
-            'compress': zlib.compress,
-            'decompress': zlib.decompress,
-            'extension': '.zlib'
-        },
-        'lzma': {
-            'compress': lzma.compress,
-            'decompress': lzma.decompress,
-            'extension': '.xz'
-        },
-        'bz2': {
-            'compress': bz2.compress,
-            'decompress': bz2.decompress,
-            'extension': '.bz2'
-        }
+        "zlib": {"compress": zlib.compress, "decompress": zlib.decompress, "extension": ".zlib"},
+        "lzma": {"compress": lzma.compress, "decompress": lzma.decompress, "extension": ".xz"},
+        "bz2": {"compress": bz2.compress, "decompress": bz2.decompress, "extension": ".bz2"},
     }
 
     def __init__(
-        self,
-        base_dir: str | Path,
-        compression_method: str = 'zlib',
-        compression_level: int = 6
+        self, base_dir: str | Path, compression_method: str = "zlib", compression_level: int = 6
     ):
         """
         Initialize storage manager.
@@ -78,7 +63,7 @@ class DataStorageManager:
 
     def save_metadata(self):
         """Save storage metadata to JSON file."""
-        with open(self.metadata_file, 'w') as f:
+        with open(self.metadata_file, "w") as f:
             json.dump(self.metadata, f, indent=4)
 
     def calculate_checksum(self, file_path: Path) -> str:
@@ -90,11 +75,7 @@ class DataStorageManager:
         return sha256_hash.hexdigest()
 
     def archive_data(
-        self,
-        df: pd.DataFrame,
-        symbol: str,
-        timeframe: str,
-        compress: bool = True
+        self, df: pd.DataFrame, symbol: str, timeframe: str, compress: bool = True
     ) -> Path:
         """
         Archive market data with optional compression.
@@ -128,7 +109,7 @@ class DataStorageManager:
 
         if compress:
             compressed_path = file_path.with_suffix(
-                self.COMPRESSION_METHODS[self.compression_method]['extension']
+                self.COMPRESSION_METHODS[self.compression_method]["extension"]
             )
             self._compress_file(file_path, compressed_path)
             file_path.unlink()  # Remove uncompressed file
@@ -136,24 +117,20 @@ class DataStorageManager:
 
         # Update metadata
         self.metadata[str(file_path)] = {
-            'symbol': symbol,
-            'timeframe': timeframe,
-            'date': f"{year}-{month:02d}",
-            'compressed': compress,
-            'checksum': self.calculate_checksum(file_path),
-            'rows': len(df),
-            'size': file_path.stat().st_size
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "date": f"{year}-{month:02d}",
+            "compressed": compress,
+            "checksum": self.calculate_checksum(file_path),
+            "rows": len(df),
+            "size": file_path.stat().st_size,
         }
         self.save_metadata()
 
         return file_path
 
     def retrieve_data(
-        self,
-        symbol: str,
-        start_date: str | datetime,
-        end_date: str | datetime,
-        timeframe: str
+        self, symbol: str, start_date: str | datetime, end_date: str | datetime, timeframe: str
     ) -> pd.DataFrame:
         """
         Retrieve archived data.
@@ -168,6 +145,7 @@ class DataStorageManager:
             Retrieved OHLCV data
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         start_date = pd.to_datetime(start_date)
@@ -178,8 +156,8 @@ class DataStorageManager:
         # Generate list of year/month combinations - ensure we cover partial months
         dates = pd.date_range(
             start_date.replace(day=1),
-            end_date + pd.Timedelta(days=32), # Add buffer to ensure we get the end month
-            freq='MS' # Month Start frequency
+            end_date + pd.Timedelta(days=32),  # Add buffer to ensure we get the end month
+            freq="MS",  # Month Start frequency
         )
         dfs = []
 
@@ -207,7 +185,7 @@ class DataStorageManager:
                 is_compressed = False
                 compression_type = None
                 for method, info in self.COMPRESSION_METHODS.items():
-                    if file_path.suffix == info['extension']:
+                    if file_path.suffix == info["extension"]:
                         is_compressed = True
                         compression_type = method
                         break
@@ -215,11 +193,13 @@ class DataStorageManager:
                 if is_compressed:
                     # Use correct decompression method based on file extension
                     logger.debug(f"Decompressing file using {compression_type}")
-                    temp_path = file_path.with_suffix('.parquet')
-                    with open(file_path, 'rb') as f_in:
+                    temp_path = file_path.with_suffix(".parquet")
+                    with open(file_path, "rb") as f_in:
                         compressed_data = f_in.read()
-                    decompressed = self.COMPRESSION_METHODS[compression_type]['decompress'](compressed_data)
-                    with open(temp_path, 'wb') as f_out:
+                    decompressed = self.COMPRESSION_METHODS[compression_type]["decompress"](
+                        compressed_data
+                    )
+                    with open(temp_path, "wb") as f_out:
                         f_out.write(decompressed)
                     df = pd.read_parquet(temp_path)
                     temp_path.unlink()
@@ -254,10 +234,7 @@ class DataStorageManager:
         return result
 
     def create_backup(
-        self,
-        source_path: str | Path,
-        description: str | None = None,
-        compress: bool = True
+        self, source_path: str | Path, description: str | None = None, compress: bool = True
     ) -> dict:
         """
         Create a backup with optional compression.
@@ -285,7 +262,7 @@ class DataStorageManager:
 
             if compress:
                 compressed_path = backup_path.with_suffix(
-                    self.COMPRESSION_METHODS[self.compression_method]['extension']
+                    self.COMPRESSION_METHODS[self.compression_method]["extension"]
                 )
                 self._compress_file(backup_path, compressed_path)
                 backup_path.unlink()
@@ -302,14 +279,14 @@ class DataStorageManager:
 
         # Create metadata
         metadata = {
-            'timestamp': timestamp,
-            'source_path': str(source_path),
-            'backup_path': str(backup_path),
-            'description': description,
-            'is_directory': is_directory,
-            'compressed': compress,
-            'checksum': checksum,
-            'size': backup_path.stat().st_size
+            "timestamp": timestamp,
+            "source_path": str(source_path),
+            "backup_path": str(backup_path),
+            "description": description,
+            "is_directory": is_directory,
+            "compressed": compress,
+            "checksum": checksum,
+            "size": backup_path.stat().st_size,
         }
 
         # Update metadata storage
@@ -318,11 +295,7 @@ class DataStorageManager:
 
         return metadata
 
-    def restore_backup(
-        self,
-        timestamp: str,
-        restore_path: str | Path | None = None
-    ) -> bool:
+    def restore_backup(self, timestamp: str, restore_path: str | Path | None = None) -> bool:
         """
         Restore from backup.
 
@@ -337,7 +310,7 @@ class DataStorageManager:
             raise ValueError(f"No backup found for timestamp: {timestamp}")
 
         backup_info = self.metadata[timestamp]
-        source = Path(backup_info['backup_path'])
+        source = Path(backup_info["backup_path"])
 
         if not source.exists():
             raise FileNotFoundError(f"Backup files not found: {source}")
@@ -346,17 +319,19 @@ class DataStorageManager:
         if restore_path:
             target = Path(restore_path)
         else:
-            target = Path(backup_info['source_path'])
+            target = Path(backup_info["source_path"])
 
         # Handle compressed backups
-        is_compressed = backup_info.get('compressed', False)
-        if is_compressed and source.suffix in [ext['extension'] for ext in self.COMPRESSION_METHODS.values()]:
-            temp_path = source.with_suffix('')
+        is_compressed = backup_info.get("compressed", False)
+        if is_compressed and source.suffix in [
+            ext["extension"] for ext in self.COMPRESSION_METHODS.values()
+        ]:
+            temp_path = source.with_suffix("")
             self._decompress_file(source, temp_path)
             source = temp_path
 
         # Perform restore
-        if backup_info['is_directory']:
+        if backup_info["is_directory"]:
             if target.exists():
                 shutil.rmtree(target)
             shutil.copytree(source, target)
@@ -365,57 +340,55 @@ class DataStorageManager:
             shutil.copy2(source, target)
 
             # Verify checksum if available
-            if backup_info['checksum']:
+            if backup_info["checksum"]:
                 restored_checksum = self.calculate_checksum(target)
-                if restored_checksum != backup_info['checksum']:
+                if restored_checksum != backup_info["checksum"]:
                     raise ValueError("Checksum verification failed after restore")
 
         # Clean up temporary files
-        if is_compressed and 'temp_path' in locals():
+        if is_compressed and "temp_path" in locals():
             temp_path.unlink()
 
         return True
 
     def _compress_file(self, source: Path, target: Path) -> None:
         """Internal method to compress a file."""
-        with open(source, 'rb') as f_in:
+        with open(source, "rb") as f_in:
             data = f_in.read()
 
-        if self.compression_method == 'zlib':
-            compressed = self.COMPRESSION_METHODS[self.compression_method]['compress'](data, level=self.compression_level)
+        if self.compression_method == "zlib":
+            compressed = self.COMPRESSION_METHODS[self.compression_method]["compress"](
+                data, level=self.compression_level
+            )
         else:
-            compressed = self.COMPRESSION_METHODS[self.compression_method]['compress'](data)
+            compressed = self.COMPRESSION_METHODS[self.compression_method]["compress"](data)
 
-        with open(target, 'wb') as f_out:
+        with open(target, "wb") as f_out:
             f_out.write(compressed)
 
     def _decompress_file(self, source: Path, target: Path) -> None:
         """Internal method to decompress a file."""
-        with open(source, 'rb') as f_in:
+        with open(source, "rb") as f_in:
             compressed_data = f_in.read()
 
-        decompressed = self.COMPRESSION_METHODS[self.compression_method]['decompress'](
+        decompressed = self.COMPRESSION_METHODS[self.compression_method]["decompress"](
             compressed_data
         )
 
-        with open(target, 'wb') as f_out:
+        with open(target, "wb") as f_out:
             f_out.write(decompressed)
 
     def _compress_directory(self, dir_path: Path) -> None:
         """Internal method to compress all files in a directory."""
-        for file_path in dir_path.rglob('*'):
+        for file_path in dir_path.rglob("*"):
             if file_path.is_file():
                 compressed_path = file_path.with_suffix(
-                    self.COMPRESSION_METHODS[self.compression_method]['extension']
+                    self.COMPRESSION_METHODS[self.compression_method]["extension"]
                 )
                 self._compress_file(file_path, compressed_path)
                 file_path.unlink()
 
-    def cleanup_old_backups(
-        self,
-        keep_days: int = 30,
-        minimum_keep: int = 5
-    ) -> list[str]:
+    def cleanup_old_backups(self, keep_days: int = 30, minimum_keep: int = 5) -> list[str]:
         """
         Remove old backups while keeping a minimum number.
 
@@ -427,31 +400,26 @@ class DataStorageManager:
             List of removed backup timestamps
         """
         import time
+
         current_timestamp = time.time()
         removed = []
 
         # Sort backups by date
-        sorted_backups = sorted(
-            self.metadata.items(),
-            key=lambda x: x[0],
-            reverse=True
-        )
+        sorted_backups = sorted(self.metadata.items(), key=lambda x: x[0], reverse=True)
 
         # Always keep the minimum number of backups
         backups_to_check = sorted_backups[minimum_keep:]
 
         for timestamp, metadata in backups_to_check:
-            backup_time = time.mktime(
-                datetime.strptime(timestamp, "%Y%m%d_%H%M%S").timetuple()
-            )
+            backup_time = time.mktime(datetime.strptime(timestamp, "%Y%m%d_%H%M%S").timetuple())
             days_old = (current_timestamp - backup_time) / (24 * 3600)
 
             if days_old > keep_days:
-                backup_path = Path(metadata['backup_path'])
+                backup_path = Path(metadata["backup_path"])
 
                 # Remove backup files
                 if backup_path.exists():
-                    if metadata['is_directory']:
+                    if metadata["is_directory"]:
                         shutil.rmtree(backup_path)
                     else:
                         backup_path.unlink()

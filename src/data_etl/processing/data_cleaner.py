@@ -24,6 +24,7 @@ from data_etl.utils.logging import get_logger
 @dataclass
 class DataSourceError:
     """Track data source errors for monitoring."""
+
     error_type: str
     timestamp: datetime
     url: str
@@ -36,6 +37,7 @@ class EnhancedDataValidator:
     Advanced trading data validator and preprocessor for Exodus v2025.
     Includes robust cleaning, validation, and feature engineering for OHLCV data.
     """
+
     def __init__(self, logger_instance: logging.Logger | None = None):
         self.logger = logger_instance or get_logger(__name__)
         self.error_stats = {
@@ -75,6 +77,7 @@ class EnhancedDataValidator:
             (cleaned DataFrame, validation report dict)
         """
         import traceback
+
         try:
             report = {}
             if df is None or df.empty:
@@ -140,7 +143,9 @@ class EnhancedDataValidator:
             zero_price_report = self._check_zero_prices(df)
             report.update(zero_price_report)
             # Extreme price change check
-            extreme_change_report = self._check_extreme_price_changes(df, threshold=extreme_change_threshold)
+            extreme_change_report = self._check_extreme_price_changes(
+                df, threshold=extreme_change_threshold
+            )
             report.update(extreme_change_report)
             # Zero volume check
             zero_vol_report = self._check_zero_volume(df)
@@ -214,19 +219,23 @@ class EnhancedDataValidator:
                 df.loc[outliers, col] = df.loc[outliers, col].clip(lower=lower, upper=upper)
         return df, outlier_report
 
-    def _validate_price_consistency(self, df: pd.DataFrame, tolerance: float, impute_missing: bool) -> tuple[pd.DataFrame, dict]:
+    def _validate_price_consistency(
+        self, df: pd.DataFrame, tolerance: float, impute_missing: bool
+    ) -> tuple[pd.DataFrame, dict]:
         price_report = {"invalid_ohlc": 0}
         inconsistent = (
-            (df["high"] < df["low"] * (1 - tolerance)) |
-            (df["high"] < df["open"] * (1 - tolerance)) |
-            (df["high"] < df["close"] * (1 - tolerance)) |
-            (df["low"] > df["open"] * (1 + tolerance)) |
-            (df["low"] > df["close"] * (1 + tolerance))
+            (df["high"] < df["low"] * (1 - tolerance))
+            | (df["high"] < df["open"] * (1 - tolerance))
+            | (df["high"] < df["close"] * (1 - tolerance))
+            | (df["low"] > df["open"] * (1 + tolerance))
+            | (df["low"] > df["close"] * (1 + tolerance))
         )
         count = int(inconsistent.sum())
         price_report["invalid_ohlc"] = count
         if count > 0:
-            self.logger.warning(f"{count} rows with inconsistent OHLC prices (tolerance: {tolerance*100}%)")
+            self.logger.warning(
+                f"{count} rows with inconsistent OHLC prices (tolerance: {tolerance * 100}%)"
+            )
             if impute_missing:
                 affected = df.loc[inconsistent].copy()
                 df.loc[inconsistent, "high"] = affected[["open", "close", "high"]].max(axis=1)
@@ -314,7 +323,10 @@ class EnhancedDataValidator:
         zero_count = int(zero_mask.sum())
         if zero_count > 0:
             self.logger.warning(f"Found {zero_count} rows with zero prices.")
-        return {"zero_price_rows": zero_count, "zero_price_indices": df.index[zero_mask].tolist() if zero_count > 0 else []}
+        return {
+            "zero_price_rows": zero_count,
+            "zero_price_indices": df.index[zero_mask].tolist() if zero_count > 0 else [],
+        }
 
     def _check_extreme_price_changes(self, df: pd.DataFrame, threshold: float = 0.2) -> dict:
         """
@@ -327,8 +339,13 @@ class EnhancedDataValidator:
         extreme_mask = price_changes > threshold
         extreme_count = int(extreme_mask.sum())
         if extreme_count > 0:
-            self.logger.warning(f"Found {extreme_count} rows with extreme price changes (>{threshold*100:.0f}%).")
-        return {"extreme_price_changes": extreme_count, "extreme_change_indices": df.index[extreme_mask].tolist() if extreme_count > 0 else []}
+            self.logger.warning(
+                f"Found {extreme_count} rows with extreme price changes (>{threshold * 100:.0f}%)."
+            )
+        return {
+            "extreme_price_changes": extreme_count,
+            "extreme_change_indices": df.index[extreme_mask].tolist() if extreme_count > 0 else [],
+        }
 
     def _check_zero_volume(self, df: pd.DataFrame) -> dict:
         """
@@ -341,7 +358,11 @@ class EnhancedDataValidator:
         zero_vol_count = int(zero_vol_mask.sum())
         if zero_vol_count > 0:
             self.logger.warning(f"Found {zero_vol_count} rows with zero volume.")
-        return {"zero_volume_rows": zero_vol_count, "zero_volume_indices": df.index[zero_vol_mask].tolist() if zero_vol_count > 0 else []}
+        return {
+            "zero_volume_rows": zero_vol_count,
+            "zero_volume_indices": df.index[zero_vol_mask].tolist() if zero_vol_count > 0 else [],
+        }
+
 
 class ResilientDataSource(EnhancedDataValidator):
     """
@@ -375,14 +396,13 @@ class ResilientDataSource(EnhancedDataValidator):
 
         # Session for connection pooling
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Exodus-v2025/1.0',
-            'Accept': 'application/json'
-        })
+        self.session.headers.update(
+            {"User-Agent": "Exodus-v2025/1.0", "Accept": "application/json"}
+        )
 
     def __del__(self):
         """Clean up session on deletion."""
-        if hasattr(self, 'session'):
+        if hasattr(self, "session"):
             self.session.close()
 
     def _track_error(self, error_type: str, url: str, message: str, retry_count: int):
@@ -392,7 +412,7 @@ class ResilientDataSource(EnhancedDataValidator):
             timestamp=datetime.now(UTC),
             url=url,
             message=message,
-            retry_count=retry_count
+            retry_count=retry_count,
         )
         self.error_history.append(error)
         self.error_stats[error_type] += 1
@@ -421,7 +441,7 @@ class ResilientDataSource(EnhancedDataValidator):
         max_retries: int = 3,
         retry_delay: float = 1.0,
         timeout: float = 30.0,
-        headers: dict | None = None
+        headers: dict | None = None,
     ) -> dict | None:
         """Get data with automatic retries and exponential backoff."""
         self._respect_rate_limit(url)
@@ -434,11 +454,7 @@ class ResilientDataSource(EnhancedDataValidator):
             try:
                 self.logger.debug(f"Requesting data from {url} (attempt {attempt + 1})")
 
-                response = self.session.get(
-                    url,
-                    timeout=timeout,
-                    headers=request_headers
-                )
+                response = self.session.get(url, timeout=timeout, headers=request_headers)
 
                 if response.status_code == 200:
                     data = response.json()
@@ -447,7 +463,7 @@ class ResilientDataSource(EnhancedDataValidator):
                 elif response.status_code == 429:
                     # Rate limit hit
                     self._track_error("rate_limit_hits", url, "Rate limit exceeded", attempt)
-                    retry_after = int(response.headers.get('Retry-After', retry_delay))
+                    retry_after = int(response.headers.get("Retry-After", retry_delay))
                     sleep(retry_after)
                 else:
                     response.raise_for_status()
@@ -459,8 +475,10 @@ class ResilientDataSource(EnhancedDataValidator):
                     raise
 
                 # Exponential backoff
-                backoff_delay = retry_delay * (2 ** attempt)
-                self.logger.warning(f"Network error on attempt {attempt + 1}, retrying in {backoff_delay}s")
+                backoff_delay = retry_delay * (2**attempt)
+                self.logger.warning(
+                    f"Network error on attempt {attempt + 1}, retrying in {backoff_delay}s"
+                )
                 sleep(backoff_delay)
 
             except requests.RequestException as e:
@@ -482,10 +500,12 @@ class ResilientDataSource(EnhancedDataValidator):
             df = self._handle_missing_values(df, impute=True)
 
             # Sort by timestamp
-            if 'timestamp' in df.columns:
-                df = df.sort_values('timestamp').reset_index(drop=True)
+            if "timestamp" in df.columns:
+                df = df.sort_values("timestamp").reset_index(drop=True)
 
-            self.logger.info(f"Cleaned data: {len(df)} records, {df.isnull().sum().sum()} missing values")
+            self.logger.info(
+                f"Cleaned data: {len(df)} records, {df.isnull().sum().sum()} missing values"
+            )
             return df
 
         except Exception as e:
@@ -493,10 +513,7 @@ class ResilientDataSource(EnhancedDataValidator):
             raise
 
     def get_data_with_rate_limit(
-        self,
-        url: str,
-        rate_limit_delay: float = 1.0,
-        max_rate_limit_retries: int = 5
+        self, url: str, rate_limit_delay: float = 1.0, max_rate_limit_retries: int = 5
     ) -> dict | None:
         """Get data respecting rate limits with intelligent backoff."""
         self._respect_rate_limit(url)
@@ -509,12 +526,12 @@ class ResilientDataSource(EnhancedDataValidator):
                     self._track_error("rate_limit_hits", url, "Rate limit exceeded", attempt)
 
                     # Try to get retry-after header
-                    retry_after = response.headers.get('Retry-After')
+                    retry_after = response.headers.get("Retry-After")
                     if retry_after:
                         delay = int(retry_after)
                     else:
                         # Exponential backoff if no retry-after header
-                        delay = rate_limit_delay * (2 ** attempt)
+                        delay = rate_limit_delay * (2**attempt)
 
                     self.logger.warning(f"Rate limited, waiting {delay}s (attempt {attempt + 1})")
                     sleep(delay)
@@ -540,19 +557,16 @@ class ResilientDataSource(EnhancedDataValidator):
         timestamp = datetime.now(UTC)
 
         data = {
-            'timestamp': [timestamp],
-            'symbol': [symbol],
-            'price': [50000.0],  # Mock price
-            'volume': [1000.0]
+            "timestamp": [timestamp],
+            "symbol": [symbol],
+            "price": [50000.0],  # Mock price
+            "volume": [1000.0],
         }
 
         return pd.DataFrame(data)
 
     def get_cached_data_with_recovery(
-        self,
-        cache_key: str,
-        fallback_url: str,
-        max_cache_age_hours: int = 24
+        self, cache_key: str, fallback_url: str, max_cache_age_hours: int = 24
     ) -> pd.DataFrame | dict:
         """Get cached data with automatic recovery and freshness validation."""
         cache_path = self.cache_dir / f"{cache_key}.json"
@@ -564,7 +578,7 @@ class ResilientDataSource(EnhancedDataValidator):
 
                 if cache_age.total_seconds() < max_cache_age_hours * 3600:
                     # Cache is fresh
-                    with open(cache_path, encoding='utf-8') as f:
+                    with open(cache_path, encoding="utf-8") as f:
                         data = json.load(f)
 
                     self.logger.debug(f"Using cached data for {cache_key}")
@@ -580,7 +594,7 @@ class ResilientDataSource(EnhancedDataValidator):
             fresh_data = self.get_data_with_retry(fallback_url)
             if fresh_data:
                 # Save to cache
-                with open(cache_path, 'w', encoding='utf-8') as f:
+                with open(cache_path, "w", encoding="utf-8") as f:
                     json.dump(fresh_data, f, indent=2, default=str)
 
                 self.logger.info(f"Cached fresh data for {cache_key}")
@@ -591,7 +605,7 @@ class ResilientDataSource(EnhancedDataValidator):
 
             # Try to use stale cache as last resort
             if cache_path.exists():
-                with open(cache_path, encoding='utf-8') as f:
+                with open(cache_path, encoding="utf-8") as f:
                     stale_data = json.load(f)
                 self.logger.warning(f"Using stale cache for {cache_key}")
                 return stale_data
@@ -603,23 +617,23 @@ class ResilientDataSource(EnhancedDataValidator):
         df = df.copy()
 
         # Convert to datetime
-        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
         # Remove rows with invalid timestamps
         initial_count = len(df)
-        df = df.dropna(subset=['timestamp'])
+        df = df.dropna(subset=["timestamp"])
 
         if len(df) < initial_count:
             self.logger.warning(f"Removed {initial_count - len(df)} rows with invalid timestamps")
 
         # Ensure timezone awareness
-        if df['timestamp'].dt.tz is None:
-            df['timestamp'] = df['timestamp'].dt.tz_localize('UTC')
+        if df["timestamp"].dt.tz is None:
+            df["timestamp"] = df["timestamp"].dt.tz_localize("UTC")
         else:
-            df['timestamp'] = df['timestamp'].dt.tz_convert('UTC')
+            df["timestamp"] = df["timestamp"].dt.tz_convert("UTC")
 
         # Sort by timestamp and remove duplicates
-        df = df.sort_values('timestamp').drop_duplicates(subset=['timestamp'])
+        df = df.sort_values("timestamp").drop_duplicates(subset=["timestamp"])
 
         return df.reset_index(drop=True)
 
@@ -638,17 +652,17 @@ class ResilientDataSource(EnhancedDataValidator):
     def get_error_summary(self) -> dict:
         """Get summary of all errors encountered."""
         return {
-            'error_stats': self.error_stats.copy(),
-            'recent_errors': [
+            "error_stats": self.error_stats.copy(),
+            "recent_errors": [
                 {
-                    'type': error.error_type,
-                    'timestamp': error.timestamp.isoformat(),
-                    'url': error.url,
-                    'message': error.message
+                    "type": error.error_type,
+                    "timestamp": error.timestamp.isoformat(),
+                    "url": error.url,
+                    "message": error.message,
                 }
                 for error in self.error_history[-10:]  # Last 10 errors
             ],
-            'total_errors': len(self.error_history)
+            "total_errors": len(self.error_history),
         }
 
     def reset_error_stats(self):
@@ -663,7 +677,7 @@ class ResilientDataSource(EnhancedDataValidator):
         output_dir: str = "data/processed",
         impute: bool = True,
         script_version: str = "1.0.0",
-        data_source: str = None
+        data_source: str = None,
     ) -> str:
         """
         Limpia un archivo CSV crudo, exporta la versión limpia a Parquet y genera metadatos avanzados.
@@ -695,6 +709,6 @@ class ResilientDataSource(EnhancedDataValidator):
             num_records=len(df),
             script_version=script_version,
             data_source=data_source,
-            df=df
+            df=df,
         )
         return str(parquet_path)

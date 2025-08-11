@@ -34,11 +34,7 @@ class BinanceDataProvider:
         self.test_mode = test_mode
 
     def download_historical_data(
-        self,
-        symbol: str,
-        start_date: datetime,
-        end_date: datetime,
-        interval: str = "1h"
+        self, symbol: str, start_date: datetime, end_date: datetime, interval: str = "1h"
     ) -> pd.DataFrame:
         """
         Download historical OHLCV data from Binance.
@@ -67,7 +63,7 @@ class BinanceDataProvider:
                 "interval": interval,
                 "startTime": start_ts,
                 "endTime": end_ts,
-                "limit": 1000  # máximo por request
+                "limit": 1000,  # máximo por request
             }
 
             all_data = []
@@ -99,17 +95,31 @@ class BinanceDataProvider:
                 return pd.DataFrame()
 
             # 7. Convertir a DataFrame
-            df = pd.DataFrame(all_data, columns=[
-                'timestamp', 'open', 'high', 'low', 'close', 'volume',
-                'close_time', 'quote_volume', 'trades', 'taker_buy_volume',
-                'taker_buy_quote_volume', 'ignore'
-            ])
+            df = pd.DataFrame(
+                all_data,
+                columns=[
+                    "timestamp",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "volume",
+                    "close_time",
+                    "quote_volume",
+                    "trades",
+                    "taker_buy_volume",
+                    "taker_buy_quote_volume",
+                    "ignore",
+                ],
+            )
 
             # 8. Limpiar y formatear datos
-            df = df[['timestamp', 'open', 'high', 'low', 'close', 'volume']]
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
-            df['symbol'] = symbol
+            df = df[["timestamp", "open", "high", "low", "close", "volume"]]
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+            df[["open", "high", "low", "close", "volume"]] = df[
+                ["open", "high", "low", "close", "volume"]
+            ].astype(float)
+            df["symbol"] = symbol
 
             self.logger.info(f"Downloaded {len(df)} rows for {symbol}")
             return df
@@ -119,11 +129,7 @@ class BinanceDataProvider:
             return pd.DataFrame()
 
     def _get_test_data(
-        self,
-        symbol: str,
-        start_date: datetime,
-        end_date: datetime,
-        interval: str = "1h"
+        self, symbol: str, start_date: datetime, end_date: datetime, interval: str = "1h"
     ) -> pd.DataFrame:
         """
         Generate test data for testing purposes.
@@ -154,21 +160,23 @@ class BinanceDataProvider:
         closes = base_price * (1 + changes)
 
         # Generate OHLCV data
-        data = pd.DataFrame({
-            'timestamp': dates,
-            'symbol': symbol,
-            'open': closes * (1 + np.random.normal(0, 0.0002, n)),
-            'high': closes * (1 + abs(np.random.normal(0, 0.0005, n))),
-            'low': closes * (1 - abs(np.random.normal(0, 0.0005, n))),
-            'close': closes,
-            'volume': abs(np.random.normal(100, 30, n))
-        })
+        data = pd.DataFrame(
+            {
+                "timestamp": dates,
+                "symbol": symbol,
+                "open": closes * (1 + np.random.normal(0, 0.0002, n)),
+                "high": closes * (1 + abs(np.random.normal(0, 0.0005, n))),
+                "low": closes * (1 - abs(np.random.normal(0, 0.0005, n))),
+                "close": closes,
+                "volume": abs(np.random.normal(100, 30, n)),
+            }
+        )
 
         # Add time components
-        data['hour'] = data['timestamp'].dt.hour
-        data['day_of_week'] = data['timestamp'].dt.dayofweek
-        data['month'] = data['timestamp'].dt.month
-        data['year'] = data['timestamp'].dt.year
+        data["hour"] = data["timestamp"].dt.hour
+        data["day_of_week"] = data["timestamp"].dt.dayofweek
+        data["month"] = data["timestamp"].dt.month
+        data["year"] = data["timestamp"].dt.year
 
         return data
 
@@ -191,13 +199,13 @@ class BinanceDataProvider:
                 return False
 
             data = response.json()
-            symbols = {s['symbol']: s['status'] for s in data['symbols']}
+            symbols = {s["symbol"]: s["status"] for s in data["symbols"]}
 
             if symbol not in symbols:
                 self.logger.warning(f"Symbol {symbol} not found on Binance")
                 return False
 
-            is_trading = symbols[symbol] == 'TRADING'
+            is_trading = symbols[symbol] == "TRADING"
             if not is_trading:
                 self.logger.warning(f"Symbol {symbol} is not currently trading")
 

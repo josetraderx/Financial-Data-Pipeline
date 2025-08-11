@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
+
 class DataSplitter:
     """
     Utility class for splitting data for training, validation, and testing.
@@ -34,7 +35,7 @@ class DataSplitter:
         test_size: float = 0.2,
         method: str = "chronological",
         timestamp_col: str = "timestamp",
-        random_state: int | None = None
+        random_state: int | None = None,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Split data into train and test sets using specified method.
@@ -76,12 +77,7 @@ class DataSplitter:
             logger.error(f"train_test_split failed: {e}")
             return df, pd.DataFrame()
 
-    def split_by_date(
-        self,
-        df: pd.DataFrame,
-        split_date,
-        timestamp_col: str = "timestamp"
-    ) -> dict:
+    def split_by_date(self, df: pd.DataFrame, split_date, timestamp_col: str = "timestamp") -> dict:
         """
         Split data by a specific date.
 
@@ -101,11 +97,12 @@ class DataSplitter:
             after = df[df[timestamp_col] > pd.to_datetime(split_date)]
 
             logger.info(f"Date split: {len(before)} before, {len(after)} after {split_date}")
-            return {'before': before, 'after': after}
+            return {"before": before, "after": after}
 
         except Exception as e:
             logger.error(f"split_by_date failed: {e}")
-            return {'before': df, 'after': pd.DataFrame()}
+            return {"before": df, "after": pd.DataFrame()}
+
     @staticmethod
     def split_random(
         df: pd.DataFrame,

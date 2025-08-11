@@ -2,6 +2,7 @@
 PostgreSQL Data Storage Module for ETL Pipeline
 Handles insertion of processed market data into PostgreSQL database
 """
+
 import logging
 import os
 from typing import Any
@@ -10,6 +11,7 @@ import pandas as pd
 import psycopg2
 
 logger = logging.getLogger(__name__)
+
 
 class PostgreSQLStorage:
     """Handles PostgreSQL storage operations for market data"""
@@ -83,8 +85,9 @@ class PostgreSQLStorage:
             logger.error(f"Failed to create table {table_name}: {e}")
             return False
 
-    def insert_market_data(self, df: pd.DataFrame, symbol: str,
-                          table_name: str = "market_data_clean") -> dict[str, int]:
+    def insert_market_data(
+        self, df: pd.DataFrame, symbol: str, table_name: str = "market_data_clean"
+    ) -> dict[str, int]:
         """
         Insert market data from DataFrame into PostgreSQL table
 
@@ -100,41 +103,48 @@ class PostgreSQLStorage:
 
         try:
             # Add symbol column if not present
-            if 'symbol' not in df.columns:
+            if "symbol" not in df.columns:
                 df = df.copy()
-                df['symbol'] = symbol
+                df["symbol"] = symbol
 
             # Prepare data for insertion
             data_to_insert = []
             for _, row in df.iterrows():
                 try:
-                    data_to_insert.append((
-                        row['timestamp'],
-                        row['symbol'],
-                        float(row['open']),
-                        float(row['high']),
-                        float(row['low']),
-                        float(row['close']),
-                        float(row['volume'])
-                    ))
+                    data_to_insert.append(
+                        (
+                            row["timestamp"],
+                            row["symbol"],
+                            float(row["open"]),
+                            float(row["high"]),
+                            float(row["low"]),
+                            float(row["close"]),
+                            float(row["volume"]),
+                        )
+                    )
                 except Exception as e:
                     logger.warning(f"Skipping row due to data conversion error: {e}")
                     stats["errors"] += 1
 
             # Insert data using executemany for better performance
             if data_to_insert:
-                self.cur.executemany(f"""
+                self.cur.executemany(
+                    f"""
                     INSERT INTO {table_name} (timestamp, symbol, open, high, low, close, volume)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (timestamp, symbol) DO NOTHING
-                """, data_to_insert)
+                """,
+                    data_to_insert,
+                )
 
                 # Count actually inserted records
                 stats["inserted"] = self.cur.rowcount
                 stats["skipped"] = len(data_to_insert) - stats["inserted"]
 
                 self.conn.commit()
-                logger.info(f"Inserted {stats['inserted']} records, skipped {stats['skipped']} duplicates")
+                logger.info(
+                    f"Inserted {stats['inserted']} records, skipped {stats['skipped']} duplicates"
+                )
 
         except Exception as e:
             logger.error(f"Error during data insertion: {e}")
@@ -155,7 +165,8 @@ class PostgreSQLStorage:
             Dictionary with statistics or None if error
         """
         try:
-            self.cur.execute(f"""
+            self.cur.execute(
+                f"""
                 SELECT
                     COUNT(*) as total_records,
                     MIN(timestamp) as earliest_date,
@@ -165,7 +176,9 @@ class PostgreSQLStorage:
                     AVG(volume) as avg_volume
                 FROM {table_name}
                 WHERE symbol = %s
-            """, (symbol,))
+            """,
+                (symbol,),
+            )
 
             result = self.cur.fetchone()
             if result:
@@ -175,15 +188,16 @@ class PostgreSQLStorage:
                     "latest_date": result[2],
                     "min_price": float(result[3]) if result[3] else None,
                     "max_price": float(result[4]) if result[4] else None,
-                    "avg_volume": float(result[5]) if result[5] else None
+                    "avg_volume": float(result[5]) if result[5] else None,
                 }
         except Exception as e:
             logger.error(f"Error getting table stats: {e}")
             return None
 
-def store_processed_data_to_postgresql(parquet_file_path: str,
-                                     connection_params: dict[str, Any],
-                                     table_name: str = "market_data_clean") -> bool:
+
+def store_processed_data_to_postgresql(
+    parquet_file_path: str, connection_params: dict[str, Any], table_name: str = "market_data_clean"
+) -> bool:
     """
     Main function to store processed parquet data to PostgreSQL
 
@@ -201,7 +215,7 @@ def store_processed_data_to_postgresql(parquet_file_path: str,
 
         # Extract symbol from filename
         filename = os.path.basename(parquet_file_path)
-        symbol = filename.split('_')[0]
+        symbol = filename.split("_")[0]
 
         logger.info(f"Loading {len(df)} records for {symbol} from {parquet_file_path}")
 
@@ -224,8 +238,12 @@ def store_processed_data_to_postgresql(parquet_file_path: str,
         if table_stats:
             logger.info(f"Storage completed for {symbol}:")
             logger.info(f"  Total records in DB: {table_stats['total_records']}")
-            logger.info(f"  Date range: {table_stats['earliest_date']} to {table_stats['latest_date']}")
-            logger.info(f"  Price range: ${table_stats['min_price']:.2f} to ${table_stats['max_price']:.2f}")
+            logger.info(
+                f"  Date range: {table_stats['earliest_date']} to {table_stats['latest_date']}"
+            )
+            logger.info(
+                f"  Price range: ${table_stats['min_price']:.2f} to ${table_stats['max_price']:.2f}"
+            )
             logger.info(f"  Average volume: {table_stats['avg_volume']:.2f}")
 
         storage.disconnect()
@@ -235,13 +253,14 @@ def store_processed_data_to_postgresql(parquet_file_path: str,
         logger.error(f"Failed to store data to PostgreSQL: {e}")
         return False
 
+
 # Default connection parameters (can be overridden)
 DEFAULT_CONNECTION_PARAMS = {
-    'host': 'localhost',
-    'port': 5433,
-    'dbname': 'exodus_db',
-    'user': 'josetraderx',
-    'password': 'Jireh2023'
+    "host": "localhost",
+    "port": 5433,
+    "dbname": "exodus_db",
+    "user": "josetraderx",
+    "password": "Jireh2023",
 }
 
 if __name__ == "__main__":
@@ -249,13 +268,10 @@ if __name__ == "__main__":
     import glob
 
     # Find processed parquet files
-    parquet_files = glob.glob('data/processed/BTCUSDT_D_full*.parquet')
+    parquet_files = glob.glob("data/processed/BTCUSDT_D_full*.parquet")
 
     if parquet_files:
-        success = store_processed_data_to_postgresql(
-            parquet_files[0],
-            DEFAULT_CONNECTION_PARAMS
-        )
+        success = store_processed_data_to_postgresql(parquet_files[0], DEFAULT_CONNECTION_PARAMS)
         if success:
             print("✅ Data successfully stored to PostgreSQL")
         else:

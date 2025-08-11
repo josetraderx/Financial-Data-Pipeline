@@ -17,20 +17,21 @@ logger = logging.getLogger(__name__)
 
 # PostgreSQL connection parameters
 DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5433,
-    'dbname': 'exodus_db',
-    'user': 'josetraderx',
-    'password': 'Jireh2023'
+    "host": "localhost",
+    "port": 5433,
+    "dbname": "exodus_db",
+    "user": "josetraderx",
+    "password": "Jireh2023",
 }
+
 
 def check_parquet_files():
     """Check status of processed parquet files"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📁 PARQUET FILES STATUS")
-    print("="*60)
+    print("=" * 60)
 
-    parquet_files = glob.glob('data/processed/*.parquet')
+    parquet_files = glob.glob("data/processed/*.parquet")
     if not parquet_files:
         print("❌ No parquet files found")
         return
@@ -39,12 +40,12 @@ def check_parquet_files():
     file_groups = {}
     for file in parquet_files:
         filename = os.path.basename(file)
-        parts = filename.split('_')
+        parts = filename.split("_")
         if len(parts) >= 4:
             symbol = parts[0]
             timeframe = parts[1]
             dataset_type = parts[2]
-            date_part = parts[3].split('.')[0]
+            date_part = parts[3].split(".")[0]
 
             key = f"{symbol}_{timeframe}_{date_part}"
             if key not in file_groups:
@@ -59,11 +60,12 @@ def check_parquet_files():
             df = pd.read_parquet(filepath)
             print(f"  ✅ {dataset_type}: {len(df)} records, {file_size:.1f} KB")
 
+
 def check_postgresql_status():
     """Check PostgreSQL database status"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🗄️  POSTGRESQL DATABASE STATUS")
-    print("="*60)
+    print("=" * 60)
 
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -109,7 +111,9 @@ def check_postgresql_status():
 
                 symbols = cur.fetchall()
                 for symbol_data in symbols:
-                    symbol, records, earliest, latest, min_price, max_price, avg_volume = symbol_data
+                    symbol, records, earliest, latest, min_price, max_price, avg_volume = (
+                        symbol_data
+                    )
                     print(f"  📈 {symbol}: {records} records")
                     print(f"     📅 Date range: {earliest.date()} to {latest.date()}")
                     print(f"     💰 Price range: ${min_price:.2f} - ${max_price:.2f}")
@@ -123,13 +127,14 @@ def check_postgresql_status():
     except Exception as e:
         print(f"❌ PostgreSQL connection failed: {e}")
 
+
 def check_pipeline_logs():
     """Check recent pipeline execution logs"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📝 RECENT PIPELINE LOGS")
-    print("="*60)
+    print("=" * 60)
 
-    log_files = glob.glob('logs/*.log')
+    log_files = glob.glob("logs/*.log")
     if not log_files:
         print("❌ No log files found")
         return
@@ -152,14 +157,15 @@ def check_pipeline_logs():
     except Exception as e:
         print(f"❌ Error reading log file: {e}")
 
+
 def display_pipeline_summary():
     """Display overall pipeline status summary"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🚀 EXODUS v2025 ETL PIPELINE SUMMARY")
-    print("="*60)
+    print("=" * 60)
 
     # Count files and records
-    parquet_files = glob.glob('data/processed/*.parquet')
+    parquet_files = glob.glob("data/processed/*.parquet")
     total_files = len(parquet_files)
     total_records = 0
 
@@ -206,6 +212,7 @@ def display_pipeline_summary():
     print("\n🎯 Pipeline Status: ✅ OPERATIONAL")
     print("🔄 Data Flow: Download → Validate → Split → Store (Parquet + PostgreSQL)")
 
+
 if __name__ == "__main__":
     print("🌟 EXODUS v2025 ETL PIPELINE STATUS REPORT")
     print(f"📅 Generated: {datetime.now()}")
@@ -216,6 +223,6 @@ if __name__ == "__main__":
     check_pipeline_logs()
     display_pipeline_summary()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✨ Report completed successfully!")
-    print("="*60)
+    print("=" * 60)

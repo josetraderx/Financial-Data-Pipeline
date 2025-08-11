@@ -26,15 +26,13 @@ except ImportError:
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
-            handlers=[
-                logging.FileHandler(log_file),
-                logging.StreamHandler()
-            ]
+            handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
         )
         return logging.getLogger(name)
 
     def get_config():
         return {}
+
 
 logger = get_logger(__name__)
 
@@ -42,6 +40,7 @@ logger = get_logger(__name__)
 @dataclass
 class DatasetMetadata:
     """Structured metadata for datasets."""
+
     symbol: str
     interval: str
     csv_file: str
@@ -90,7 +89,7 @@ class EnhancedMetadataManager:
         """Load metadata index for fast searches."""
         try:
             if self.metadata_index_file.exists():
-                with open(self.metadata_index_file, encoding='utf-8') as f:
+                with open(self.metadata_index_file, encoding="utf-8") as f:
                     self.metadata_index = json.load(f)
             else:
                 self.metadata_index = {}
@@ -102,7 +101,7 @@ class EnhancedMetadataManager:
     def _save_metadata_index(self):
         """Save metadata index to disk."""
         try:
-            with open(self.metadata_index_file, 'w', encoding='utf-8') as f:
+            with open(self.metadata_index_file, "w", encoding="utf-8") as f:
                 json.dump(self.metadata_index, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Could not save metadata index: {e}")
@@ -117,16 +116,16 @@ class EnhancedMetadataManager:
                 continue
 
             try:
-                with open(metadata_file, encoding='utf-8') as f:
+                with open(metadata_file, encoding="utf-8") as f:
                     metadata = json.load(f)
 
                 key = f"{metadata.get('symbol', 'unknown')}_{metadata.get('interval', 'unknown')}"
                 self.metadata_index[key] = {
-                    'file': metadata_file.name,
-                    'symbol': metadata.get('symbol'),
-                    'interval': metadata.get('interval'),
-                    'created_at': metadata.get('created_at'),
-                    'num_records': metadata.get('num_records')
+                    "file": metadata_file.name,
+                    "symbol": metadata.get("symbol"),
+                    "interval": metadata.get("interval"),
+                    "created_at": metadata.get("created_at"),
+                    "num_records": metadata.get("num_records"),
                 }
             except Exception as e:
                 self.logger.warning(f"Could not read metadata file {metadata_file}: {e}")
@@ -159,29 +158,29 @@ class EnhancedMetadataManager:
             quality_score = max(0, 100 - missing_percentage)
 
             return {
-                'data_quality_score': round(quality_score, 2),
-                'missing_data_percentage': round(missing_percentage, 2)
+                "data_quality_score": round(quality_score, 2),
+                "missing_data_percentage": round(missing_percentage, 2),
             }
         except Exception as e:
             self.logger.warning(f"Could not analyze data quality: {e}")
-            return {'data_quality_score': None, 'missing_data_percentage': None}
+            return {"data_quality_score": None, "missing_data_percentage": None}
 
     def get_data_date_range(self, df: pd.DataFrame) -> dict[str, str | None]:
         """Extract date range from dataframe."""
         try:
-            if 'timestamp' in df.columns:
-                timestamps = pd.to_datetime(df['timestamp'], errors='coerce')
+            if "timestamp" in df.columns:
+                timestamps = pd.to_datetime(df["timestamp"], errors="coerce")
                 valid_timestamps = timestamps.dropna()
 
                 if len(valid_timestamps) > 0:
                     return {
-                        'start_date': valid_timestamps.min().isoformat(),
-                        'end_date': valid_timestamps.max().isoformat()
+                        "start_date": valid_timestamps.min().isoformat(),
+                        "end_date": valid_timestamps.max().isoformat(),
                     }
         except Exception as e:
             self.logger.warning(f"Could not extract date range: {e}")
 
-        return {'start_date': None, 'end_date': None}
+        return {"start_date": None, "end_date": None}
 
     def save_metadata(
         self,
@@ -192,7 +191,7 @@ class EnhancedMetadataManager:
         script_version: str | None = None,
         data_source: str | None = None,
         extra_fields: dict | None = None,
-        df: pd.DataFrame | None = None
+        df: pd.DataFrame | None = None,
     ) -> Path:
         """
         Save comprehensive metadata for a dataset.
@@ -240,7 +239,7 @@ class EnhancedMetadataManager:
             columns=columns,
             **quality_metrics,
             **date_range,
-            extra_fields=extra_fields
+            extra_fields=extra_fields,
         )
 
         # Determine metadata file path
@@ -255,11 +254,11 @@ class EnhancedMetadataManager:
             # Update index
             index_key = f"{symbol}_{interval}"
             self.metadata_index[index_key] = {
-                'file': metadata_path.name,
-                'symbol': symbol,
-                'interval': interval,
-                'created_at': metadata.created_at,
-                'num_records': num_records
+                "file": metadata_path.name,
+                "symbol": symbol,
+                "interval": interval,
+                "created_at": metadata.created_at,
+                "num_records": num_records,
             }
             self._save_metadata_index()
 
@@ -275,7 +274,7 @@ class EnhancedMetadataManager:
         metadata_path = Path(metadata_path)
 
         try:
-            with open(metadata_path, encoding='utf-8') as f:
+            with open(metadata_path, encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
             self.logger.error(f"Error loading metadata from {metadata_path}: {e}")
@@ -286,7 +285,7 @@ class EnhancedMetadataManager:
         index_key = f"{symbol}_{interval}"
 
         if index_key in self.metadata_index:
-            metadata_file = self.metadata_dir / self.metadata_index[index_key]['file']
+            metadata_file = self.metadata_dir / self.metadata_index[index_key]["file"]
             return self.load_metadata(metadata_file)
 
         return None
@@ -296,7 +295,7 @@ class EnhancedMetadataManager:
         datasets = []
 
         for _key, index_entry in self.metadata_index.items():
-            metadata_file = self.metadata_dir / index_entry['file']
+            metadata_file = self.metadata_dir / index_entry["file"]
             metadata = self.load_metadata(metadata_file)
 
             if metadata:
@@ -318,7 +317,7 @@ class EnhancedMetadataManager:
         if not metadata:
             return False
 
-        stored_hash = metadata.get('hash_sha256')
+        stored_hash = metadata.get("hash_sha256")
         current_hash = self.calculate_sha256(csv_path)
 
         if stored_hash == current_hash:
@@ -333,7 +332,7 @@ class EnhancedMetadataManager:
         datasets = self.list_all_datasets()
 
         if not datasets:
-            return {'total_datasets': 0}
+            return {"total_datasets": 0}
 
         symbols = set()
         intervals = set()
@@ -341,20 +340,20 @@ class EnhancedMetadataManager:
         data_sources = set()
 
         for dataset in datasets:
-            symbols.add(dataset.get('symbol'))
-            intervals.add(dataset.get('interval'))
-            total_records += dataset.get('num_records', 0)
-            if dataset.get('data_source'):
-                data_sources.add(dataset.get('data_source'))
+            symbols.add(dataset.get("symbol"))
+            intervals.add(dataset.get("interval"))
+            total_records += dataset.get("num_records", 0)
+            if dataset.get("data_source"):
+                data_sources.add(dataset.get("data_source"))
 
         return {
-            'total_datasets': len(datasets),
-            'unique_symbols': len(symbols),
-            'unique_intervals': len(intervals),
-            'total_records': total_records,
-            'symbols': sorted(symbols),
-            'intervals': sorted(intervals),
-            'data_sources': sorted(data_sources)
+            "total_datasets": len(datasets),
+            "unique_symbols": len(symbols),
+            "unique_intervals": len(intervals),
+            "total_records": total_records,
+            "symbols": sorted(symbols),
+            "intervals": sorted(intervals),
+            "data_sources": sorted(data_sources),
         }
 
 
@@ -381,7 +380,7 @@ def save_metadata(
         interval=interval,
         num_records=num_records,
         script_version=script_version,
-        extra_fields=extra_fields
+        extra_fields=extra_fields,
     )
 
 
@@ -415,7 +414,7 @@ def test_metadata_manager():
         num_records=len(df),
         script_version="2.0.0",
         data_source="test",
-        df=df
+        df=df,
     )
 
     print(f"✅ Metadata saved to: {metadata_path}")
@@ -439,7 +438,7 @@ def test_metadata_manager():
         symbol="BTCUSDT",
         interval="1m",
         num_records=2,
-        script_version="1.0.0"
+        script_version="1.0.0",
     )
     print(f"✅ Legacy function works: {legacy_path}")
 

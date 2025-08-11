@@ -15,21 +15,31 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logger.addHandler(handler)
 
 REQUIRED_OHLCV_COLUMNS = [
-    'timestamp', 'symbol', 'open', 'high', 'low', 'close', 'volume',
-    'hour', 'day_of_week', 'month', 'year'
+    "timestamp",
+    "symbol",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "hour",
+    "day_of_week",
+    "month",
+    "year",
 ]
 
 DEFAULT_CONFIG = {
-    'host': 'localhost',
-    'port': 5433,
-    'database': 'exodus_trading',
-    'user': 'postgres',
-    'password': 'Jireh2023.'
+    "host": "localhost",
+    "port": 5433,
+    "database": "exodus_trading",
+    "user": "postgres",
+    "password": "Jireh2023.",
 }
+
 
 class TimeSeriesDB:
     """
@@ -57,14 +67,14 @@ class TimeSeriesDB:
 
     def _verify_config(self):
         """Verify that all required config keys are present."""
-        required_keys = ['host', 'port', 'database', 'user', 'password']
+        required_keys = ["host", "port", "database", "user", "password"]
         for key in required_keys:
             if key not in self.config:
                 raise KeyError(f"Missing required configuration key: {key}")
 
         # Ensure port is an integer
         try:
-            self.config['port'] = int(self.config['port'])
+            self.config["port"] = int(self.config["port"])
         except (ValueError, TypeError):
             raise ValueError("Port must be a valid integer")
 
@@ -85,11 +95,11 @@ class TimeSeriesDB:
 
             # Create connection
             self.conn = psycopg2.connect(
-                host=self.config['host'],
-                port=self.config['port'],
-                database=self.config['database'],
-                user=self.config['user'],
-                password=self.config['password']
+                host=self.config["host"],
+                port=self.config["port"],
+                database=self.config["database"],
+                user=self.config["user"],
+                password=self.config["password"],
             )
 
             # Create SQLAlchemy engine for DataFrame operations
@@ -103,7 +113,9 @@ class TimeSeriesDB:
                     self.logger.warning("TimescaleDB extension not found in database")
                     return False
 
-            self.logger.info(f"Successfully connected to {self.config['database']} at {self.config['host']}:{self.config['port']}")
+            self.logger.info(
+                f"Successfully connected to {self.config['database']} at {self.config['host']}:{self.config['port']}"
+            )
             return True
 
         except Exception as e:
@@ -166,8 +178,14 @@ class TimeSeriesDB:
 
                 # Compresión nativa TimescaleDB (opcional)
                 try:
-                    conn.execute(text(f"ALTER TABLE {table_name} SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol');"))
-                    conn.execute(text(f"SELECT add_compression_policy('{table_name}', INTERVAL '90 days');"))
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {table_name} SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol');"
+                        )
+                    )
+                    conn.execute(
+                        text(f"SELECT add_compression_policy('{table_name}', INTERVAL '90 days');")
+                    )
                 except Exception:
                     pass
 
@@ -182,7 +200,7 @@ class TimeSeriesDB:
         self,
         df: pd.DataFrame,
         table_name: str = "ohlcv_data",
-        if_exists: Literal['append', 'replace', 'fail'] = "append"
+        if_exists: Literal["append", "replace", "fail"] = "append",
     ) -> bool:
         """
         Insert OHLCV DataFrame into TimescaleDB hypertable.
@@ -203,20 +221,14 @@ class TimeSeriesDB:
             return False
         try:
             # Ensure timestamp column is timezone-aware
-            if 'timestamp' in df.columns:
-                if df['timestamp'].dt.tz is None:
-                    df['timestamp'] = df['timestamp'].dt.tz_localize('UTC')
+            if "timestamp" in df.columns:
+                if df["timestamp"].dt.tz is None:
+                    df["timestamp"] = df["timestamp"].dt.tz_localize("UTC")
                 else:
-                    df['timestamp'] = df['timestamp'].dt.tz_convert('UTC')
+                    df["timestamp"] = df["timestamp"].dt.tz_convert("UTC")
 
             # Insert data
-            df.to_sql(
-                table_name,
-                self.engine,
-                if_exists=if_exists,
-                index=False,
-                method='multi'
-            )
+            df.to_sql(table_name, self.engine, if_exists=if_exists, index=False, method="multi")
 
             self.logger.info(f"Inserted {len(df)} rows into {table_name}")
             return True
@@ -231,7 +243,7 @@ class TimeSeriesDB:
         start_time: datetime | None = None,
         end_time: datetime | None = None,
         table_name: str = "ohlcv_data",
-        limit: int | None = None
+        limit: int | None = None,
     ) -> pd.DataFrame:
         """
         Query OHLCV data from TimescaleDB. Uses parameters to prevent SQL injection.
@@ -276,8 +288,8 @@ class TimeSeriesDB:
             df = pd.read_sql(text(query), self.engine, params=params)
 
             # Convert timestamp to datetime with timezone
-            if 'timestamp' in df.columns:
-                df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
+            if "timestamp" in df.columns:
+                df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
             self.logger.info(f"Retrieved {len(df)} rows for {symbol}")
             return df
@@ -351,14 +363,14 @@ class TimeSeriesDB:
                 row = result.fetchone()
 
             stats = {
-                'symbol': symbol,
-                'record_count': row[0],
-                'first_timestamp': row[1],
-                'last_timestamp': row[2],
-                'min_price': float(row[3]) if row[3] else None,
-                'max_price': float(row[4]) if row[4] else None,
-                'avg_price': float(row[5]) if row[5] else None,
-                'total_volume': float(row[6]) if row[6] else None
+                "symbol": symbol,
+                "record_count": row[0],
+                "first_timestamp": row[1],
+                "last_timestamp": row[2],
+                "min_price": float(row[3]) if row[3] else None,
+                "max_price": float(row[4]) if row[4] else None,
+                "avg_price": float(row[5]) if row[5] else None,
+                "total_volume": float(row[6]) if row[6] else None,
             }
 
             self.logger.info(f"Retrieved stats for {symbol}: {stats['record_count']} records")
@@ -368,11 +380,7 @@ class TimeSeriesDB:
             self.logger.error(f"Failed to get stats for {symbol}: {e}")
             return {}
 
-    def upsert_ohlcv_data(
-        self,
-        df: pd.DataFrame,
-        table_name: str = "ohlcv_data"
-    ) -> bool:
+    def upsert_ohlcv_data(self, df: pd.DataFrame, table_name: str = "ohlcv_data") -> bool:
         """
         Upsert (insert or update) OHLCV data to avoid duplicates.
         """
@@ -411,6 +419,7 @@ class TimeSeriesDB:
             self.engine.dispose()
             self.logger.info("TimescaleDB connection closed")
 
+
 if __name__ == "__main__":
     import os
     from datetime import datetime
@@ -419,17 +428,20 @@ if __name__ == "__main__":
     from dotenv import load_dotenv
 
     # Cargar variables de entorno desde el archivo de configuración
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-                              'config', 'database.env')
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        "config",
+        "database.env",
+    )
     load_dotenv(config_path)
 
     # Configuración desde variables de entorno
     db = TimeSeriesDB(
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=int(os.getenv('DB_PORT', 5432)),
-        database=os.getenv('DB_NAME', 'exodus_db'),
-        username=os.getenv('DB_USER', 'postgres'),
-        password=os.getenv('DB_PASSWORD', 'password')
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", 5432)),
+        database=os.getenv("DB_NAME", "exodus_db"),
+        username=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", "password"),
     )
 
     # Test de conexión y operaciones
@@ -440,30 +452,32 @@ if __name__ == "__main__":
             print("✅ Tabla OHLCV creada exitosamente")
 
             # Crear datos de ejemplo
-            df = pd.DataFrame({
-                'timestamp': [pd.Timestamp(datetime.now(), tz='UTC')],
-                'symbol': ['BTCUSDT'],
-                'open': [30000.0],
-                'high': [30500.0],
-                'low': [29900.0],
-                'close': [30400.0],
-                'volume': [100.0],
-                'hour': [datetime.now().hour],
-                'day_of_week': [datetime.now().weekday()],
-                'month': [datetime.now().month],
-                'year': [datetime.now().year]
-            })
+            df = pd.DataFrame(
+                {
+                    "timestamp": [pd.Timestamp(datetime.now(), tz="UTC")],
+                    "symbol": ["BTCUSDT"],
+                    "open": [30000.0],
+                    "high": [30500.0],
+                    "low": [29900.0],
+                    "close": [30400.0],
+                    "volume": [100.0],
+                    "hour": [datetime.now().hour],
+                    "day_of_week": [datetime.now().weekday()],
+                    "month": [datetime.now().month],
+                    "year": [datetime.now().year],
+                }
+            )
 
             if db.insert_ohlcv_data(df):
                 print("✅ Datos de ejemplo insertados correctamente")
 
                 # Consultar datos
-                result_df = db.query_ohlcv_data('BTCUSDT', limit=5)
+                result_df = db.query_ohlcv_data("BTCUSDT", limit=5)
                 if not result_df.empty:
                     print("\n📊 Últimos datos:")
                     print(result_df)
 
-                stats = db.get_symbol_stats('BTCUSDT')
+                stats = db.get_symbol_stats("BTCUSDT")
                 if stats:
                     print("\n📈 Estadísticas:")
                     for key, value in stats.items():
