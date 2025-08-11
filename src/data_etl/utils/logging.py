@@ -5,6 +5,7 @@ Provides functions to configure and retrieve loggers for diagnostics and monitor
 import logging
 import os
 
+
 def get_logger(name: str) -> logging.Logger:
     log_dir = 'logs'
     os.makedirs(log_dir, exist_ok=True)

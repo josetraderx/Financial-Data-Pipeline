@@ -1,6 +1,9 @@
 from unittest.mock import patch
+
 import pandas as pd
+
 from data_etl.providers.crypto.bybit_downloader import BybitDownloader
+
 
 @patch('data_etl.providers.crypto.bybit_downloader.requests.get')
 def test_bybit_downloader(mock_get):

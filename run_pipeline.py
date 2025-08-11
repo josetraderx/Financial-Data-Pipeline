@@ -1,8 +1,9 @@
-import os
-import sys
 import json
 import logging
+import os
+import sys
 from datetime import datetime, timedelta
+
 
 # Crear carpeta de logs si no existe
 def ensure_log_dir(log_dir):
@@ -24,14 +25,14 @@ def setup_logging(log_dir):
 
 # Cargar configuración desde archivo JSON
 def load_config(config_path):
-    with open(config_path, 'r') as f:
+    with open(config_path) as f:
         return json.load(f)
 
 # Selección de pipeline (por ahora solo 'crypto')
 def get_pipeline(pipeline_name):
     if pipeline_name == 'crypto':
-        from data_etl.pipelines.crypto_pipeline import CryptoPipeline
         from data_etl.pipelines.config_manager import PipelineConfig
+        from data_etl.pipelines.crypto_pipeline import CryptoPipeline
         return CryptoPipeline, PipelineConfig
     # Aquí puedes agregar más pipelines en el futuro
     else:
@@ -69,4 +70,4 @@ def main():
     logging.info('Pipeline orchestration finished.')
 
 if __name__ == '__main__':
-    main() 
+    main()

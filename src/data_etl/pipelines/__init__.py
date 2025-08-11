@@ -2,7 +2,7 @@
 __init__.py for data pipelines module.
 """
 
-from .crypto_pipeline import CryptoPipeline
 from .config_manager import PipelineConfig
+from .crypto_pipeline import CryptoPipeline
 
 __all__ = ['CryptoPipeline', 'PipelineConfig']

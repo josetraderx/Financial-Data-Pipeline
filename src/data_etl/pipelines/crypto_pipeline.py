@@ -3,23 +3,25 @@ Crypto data pipeline for Exodus v2025.
 Demonstrates end-to-end data flow: download -> validate -> split -> store.
 """
 
-import os
-import sys
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
-import pandas as pd
 from pathlib import Path
+from typing import Any
 
-from data_etl.providers.crypto.bybit_downloader import BybitDownloader
-from data_etl.processing.enhanced_metadata_manager import EnhancedMetadataManager
+import pandas as pd
+
 from data_etl.processing.data_cleaner import EnhancedDataValidator
 from data_etl.processing.data_normalizer import DataNormalizer
-from data_etl.processing.timeframe_aggregator import TimeframeAggregator
 from data_etl.processing.data_splitter import DataSplitter
-from data_etl.storage.timeseries_db import TimeSeriesDB
+from data_etl.processing.enhanced_metadata_manager import EnhancedMetadataManager
+from data_etl.processing.timeframe_aggregator import TimeframeAggregator
+from data_etl.providers.crypto.bybit_downloader import BybitDownloader
 from data_etl.storage.metadata_db import MetadataDB
-from data_etl.storage.postgresql_storage import store_processed_data_to_postgresql, DEFAULT_CONNECTION_PARAMS
+from data_etl.storage.postgresql_storage import (
+    DEFAULT_CONNECTION_PARAMS,
+    store_processed_data_to_postgresql,
+)
+from data_etl.storage.timeseries_db import TimeSeriesDB
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,11 +32,11 @@ class CryptoPipeline:
     """
     Complete crypto data pipeline integrating all data processing components.
     """
-    
-    def __init__(self, config: Dict[str, Any]):
+
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize the pipeline with configuration.
-        
+
         Args:
             config: Configuration dictionary containing:
                 - data_dir: Data directory path
@@ -45,27 +47,27 @@ class CryptoPipeline:
         self.config = config
         self.data_dir = Path(config['data_dir'])
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize components
         self.metadata_manager = EnhancedMetadataManager(self.data_dir)
         self.validator = EnhancedDataValidator()
         self.normalizer = DataNormalizer()
         self.aggregator = TimeframeAggregator()
         self.splitter = DataSplitter()
-        
+
         # Database connections
         self.db_config = config['db_config']
         self.timeseries_db = None
         self.metadata_db = None
-        
+
         # Provider instances
         self.providers = {}
         self._init_providers()
-        
+
     def _init_providers(self) -> None:
         """Initialize data provider instances."""
         provider_configs = self.config.get('providers', {})
-        
+
         # Initialize Bybit provider (works with or without API keys for public endpoints)
         bybit_config = provider_configs.get('bybit', {})
         self.providers['bybit'] = BybitDownloader(
@@ -74,55 +76,55 @@ class CryptoPipeline:
             testnet=bybit_config.get('testnet', False)
         )
         logger.info("Bybit provider initialized (using public endpoints)")
-    
+
     def _init_databases(self) -> None:
         """Initialize database connections."""
         try:
             self.timeseries_db = TimeSeriesDB(self.db_config)
             self.timeseries_db.connect()
             self.timeseries_db.create_hypertable()
-            
+
             self.metadata_db = MetadataDB(self.db_config)
             self.metadata_db.connect()
             self.metadata_db.create_tables()
-            
+
             logger.info("Database connections initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize databases: {e}")
             raise
-    
+
     def _cleanup_databases(self) -> None:
         """Clean up database connections."""
         if self.timeseries_db:
             self.timeseries_db.disconnect()
         if self.metadata_db:
             self.metadata_db.disconnect()
-    
-    def download_data(self, provider: str, symbol: str, timeframe: str, start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+
+    def download_data(self, provider: str, symbol: str, timeframe: str, start_date: str, end_date: str) -> pd.DataFrame | None:
         """
         Download data from specified provider.
-        
+
         Args:
             provider: Provider name (e.g., 'bybit')
             symbol: Trading symbol
             timeframe: Timeframe (e.g., '1d', '1h', 'D')
             start_date: Start date
             end_date: End date
-            
+
         Returns:
             Downloaded data or None if failed
         """
         if provider not in self.providers:
             logger.error(f"Provider {provider} not configured")
             return None
-        
+
         try:
             provider_instance = self.providers[provider]
-            
+
             if provider == 'bybit':
                 # Map timeframe to Bybit format (valid intervals: 1, 5, 15, 60, 240, D, W, M)
                 timeframe_map = {
-                    'D': 'D',     # Daily 
+                    'D': 'D',     # Daily
                     '1d': 'D',    # Daily
                     '4h': '240',  # 4 hours = 240 minutes
                     '1h': '60',   # 1 hour = 60 minutes
@@ -132,24 +134,24 @@ class CryptoPipeline:
                 }
                 bybit_timeframe = timeframe_map.get(timeframe, timeframe)
                 logger.info(f"Using Bybit timeframe: {bybit_timeframe} (from {timeframe})")
-                
+
                 data = provider_instance.download_complete_history(symbol, bybit_timeframe, start_date, end_date)
             else:
                 logger.error(f"Unknown provider: {provider}")
                 return None
-            
+
             if data is not None and not data.empty:
                 logger.info(f"Downloaded {len(data)} records from {provider}")
                 return data
             else:
                 logger.warning(f"No data received from {provider}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"Error downloading data from {provider}: {e}")
             return None
-    
-    def process_data(self, data: pd.DataFrame, symbol: str, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
+
+    def process_data(self, data: pd.DataFrame, symbol: str, pipeline_config: dict[str, Any]) -> dict[str, Any]:
         """
         Procesa los datos: limpieza, normalización y agregación (según config).
         Args:
@@ -196,31 +198,31 @@ class CryptoPipeline:
                 'report': {'is_valid': False, 'errors': [str(e)]},
                 'is_valid': False
             }
-    
-    def split_data(self, data: pd.DataFrame, split_config: Dict[str, Any]) -> Dict[str, pd.DataFrame]:
+
+    def split_data(self, data: pd.DataFrame, split_config: dict[str, Any]) -> dict[str, pd.DataFrame]:
         """
         Split data according to configuration.
-        
+
         Args:
             data: Cleaned data DataFrame
             split_config: Split configuration
-            
+
         Returns:
             Dictionary with split datasets
         """
         try:
             splits = {}
-            
+
             if split_config.get('train_test_split'):
                 config = split_config['train_test_split']
                 train_data, test_data = self.splitter.train_test_split(
-                    data, 
+                    data,
                     test_size=config.get('test_size', 0.2),
                     method=config.get('method', 'chronological')
                 )
                 splits['train'] = train_data
                 splits['test'] = test_data
-            
+
             if split_config.get('date_split'):
                 config = split_config['date_split']
                 date_splits = self.splitter.split_by_date(
@@ -228,7 +230,7 @@ class CryptoPipeline:
                     split_date=config['split_date']
                 )
                 splits.update(date_splits)
-            
+
             if split_config.get('sliding_windows'):
                 config = split_config['sliding_windows']
                 windows = self.splitter.create_sliding_windows(
@@ -237,22 +239,22 @@ class CryptoPipeline:
                     step_size=config.get('step_size', 1)
                 )
                 splits['windows'] = windows
-            
+
             logger.info(f"Data split into {len(splits)} datasets")
             return splits
-            
+
         except Exception as e:
             logger.error(f"Error splitting data: {e}")
             return {}
-    
-    def store_data(self, data: pd.DataFrame, metadata: Dict[str, Any]) -> Optional[int]:
+
+    def store_data(self, data: pd.DataFrame, metadata: dict[str, Any]) -> int | None:
         """
         Store data and metadata in databases.
-        
+
         Args:
             data: Data to store
             metadata: Dataset metadata
-            
+
         Returns:
             Dataset ID or None if failed
         """
@@ -260,21 +262,21 @@ class CryptoPipeline:
             # Store time series data
             self.timeseries_db.insert_data(data)
             logger.info(f"Stored {len(data)} records in time series database")
-            
+
             # Store metadata
             dataset_id = self.metadata_db.insert_dataset_metadata(metadata)
             logger.info(f"Stored metadata with dataset ID: {dataset_id}")
-            
+
             return dataset_id
-            
+
         except Exception as e:
             logger.error(f"Error storing data: {e}")
             return None
-    
-    def store_validation_report(self, dataset_id: int, report: Dict[str, Any]) -> None:
+
+    def store_validation_report(self, dataset_id: int, report: dict[str, Any]) -> None:
         """
         Store validation report in metadata database.
-        
+
         Args:
             dataset_id: Dataset ID
             report: Validation report
@@ -284,21 +286,21 @@ class CryptoPipeline:
             logger.info(f"Stored validation report for dataset {dataset_id}")
         except Exception as e:
             logger.error(f"Error storing validation report: {e}")
-    
+
     def save_to_file(self, data: pd.DataFrame, filename: str, format: str = 'parquet') -> str:
         """
         Save data to file.
-        
+
         Args:
             data: Data to save
             filename: Filename
             format: File format ('parquet', 'csv', 'json')
-            
+
         Returns:
             File path
         """
         filepath = self.data_dir / filename
-        
+
         try:
             if format == 'parquet':
                 data.to_parquet(filepath, index=False)
@@ -308,15 +310,15 @@ class CryptoPipeline:
                 data.to_json(filepath, orient='records', date_format='iso')
             else:
                 raise ValueError(f"Unsupported format: {format}")
-            
+
             logger.info(f"Data saved to {filepath}")
             return str(filepath)
-            
+
         except Exception as e:
             logger.error(f"Error saving data to {filepath}: {e}")
             raise
-    
-    def run_pipeline(self, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
+
+    def run_pipeline(self, pipeline_config: dict[str, Any]) -> dict[str, Any]:
         """
         Run the complete data pipeline for multiple assets/timeframes if present.
         Args:
@@ -349,7 +351,7 @@ class CryptoPipeline:
             logger.error(f"Pipeline failed: {e}")
             return {'success': False, 'errors': [str(e)]}
 
-    def run_pipeline_single(self, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
+    def run_pipeline_single(self, pipeline_config: dict[str, Any]) -> dict[str, Any]:
         """
         Run the pipeline for a single asset/timeframe.
         """
@@ -487,11 +489,11 @@ class CryptoPipeline:
             if pipeline_config.get('store_db', False):
                 self._cleanup_databases()
         return results
-    
-    def get_pipeline_status(self) -> Dict[str, Any]:
+
+    def get_pipeline_status(self) -> dict[str, Any]:
         """
         Get pipeline status and statistics.
-        
+
         Returns:
             Pipeline status information
         """
@@ -557,16 +559,16 @@ def main():
     """Example usage of the crypto pipeline."""
     # Initialize pipeline
     pipeline = CryptoPipeline(EXAMPLE_CONFIG)
-    
+
     # Run pipeline
     results = pipeline.run_pipeline(EXAMPLE_PIPELINE_CONFIG)
-    
+
     # Print results
     print("Pipeline Results:")
     print(f"Success: {results['success']}")
     print(f"Datasets: {results['datasets']}")
     print(f"Validation Report: {results['validation_report']}")
-    
+
     if results['errors']:
         print(f"Errors: {results['errors']}")
 

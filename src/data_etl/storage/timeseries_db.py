@@ -3,12 +3,13 @@ TimescaleDB connector for efficient time series data storage in Exodus v2025.
 Handles OHLCV data as hypertables for fast queries and automatic partitioning.
 """
 
+import logging
+from datetime import datetime
+from typing import Literal
+
 import pandas as pd
 import psycopg2
 from sqlalchemy import create_engine, text
-from typing import Optional, Dict, List, Literal
-from datetime import datetime
-import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -38,12 +39,12 @@ class TimeSeriesDB:
 
     def __init__(
         self,
-        config: Optional[Dict] = None,
-        logger: Optional[logging.Logger] = None,
+        config: dict | None = None,
+        logger: logging.Logger | None = None,
     ):
         """
         Initialize TimescaleDB connection.
-        
+
         Args:
             config: Database configuration dictionary with host, port, database, user, password
             logger: Optional logger instance
@@ -53,14 +54,14 @@ class TimeSeriesDB:
         self.conn = None
         self.engine = None
         self._verify_config()
-        
+
     def _verify_config(self):
         """Verify that all required config keys are present."""
         required_keys = ['host', 'port', 'database', 'user', 'password']
         for key in required_keys:
             if key not in self.config:
                 raise KeyError(f"Missing required configuration key: {key}")
-        
+
         # Ensure port is an integer
         try:
             self.config['port'] = int(self.config['port'])
@@ -74,7 +75,7 @@ class TimeSeriesDB:
     def connect(self) -> bool:
         """
         Connect to the TimescaleDB database.
-        
+
         Returns:
             bool: True if connection successful, False otherwise.
         """
@@ -108,7 +109,7 @@ class TimeSeriesDB:
         except Exception as e:
             self.logger.error(f"Failed to connect to database: {str(e)}")
             return False
-            
+
     def disconnect(self):
         """Close database connection."""
         if self.conn:
@@ -122,10 +123,10 @@ class TimeSeriesDB:
         """
         Create hypertable for OHLCV data if it doesn't exist.
         Uses FLOAT for OHLCV columns for performance.
-        
+
         Args:
             table_name: Name of the hypertable.
-            
+
         Returns:
             bool: True if successful, False otherwise.
         """
@@ -149,30 +150,30 @@ class TimeSeriesDB:
                 );
                 """
                 conn.execute(text(create_table_sql))
-                
+
                 # Create hypertable (TimescaleDB specific)
-                hypertable_sql = f"""
+                hypertable_sql = """
                 SELECT create_hypertable(:table, 'timestamp', if_not_exists => TRUE);
                 """
                 conn.execute(text(hypertable_sql), {"table": table_name})
-                
+
                 # Create index for symbol lookups
                 index_sql = f"""
-                CREATE INDEX IF NOT EXISTS idx_{table_name}_symbol_timestamp 
+                CREATE INDEX IF NOT EXISTS idx_{table_name}_symbol_timestamp
                 ON {table_name} (symbol, timestamp DESC);
                 """
                 conn.execute(text(index_sql))
-                
+
                 # Compresión nativa TimescaleDB (opcional)
                 try:
                     conn.execute(text(f"ALTER TABLE {table_name} SET (timescaledb.compress, timescaledb.compress_segmentby = 'symbol');"))
                     conn.execute(text(f"SELECT add_compression_policy('{table_name}', INTERVAL '90 days');"))
                 except Exception:
                     pass
-                
+
                 self.logger.info(f"Hypertable {table_name} created successfully")
                 return True
-                
+
         except Exception as e:
             self.logger.error(f"Failed to create hypertable {table_name}: {e}")
             return False
@@ -186,12 +187,12 @@ class TimeSeriesDB:
         """
         Insert OHLCV DataFrame into TimescaleDB hypertable.
         Validates DataFrame columns before insert.
-        
+
         Args:
             df: DataFrame with OHLCV data.
             table_name: Target table name.
             if_exists: How to behave if table exists ('append', 'replace', 'fail').
-            
+
         Returns:
             bool: True if successful, False otherwise.
         """
@@ -207,19 +208,19 @@ class TimeSeriesDB:
                     df['timestamp'] = df['timestamp'].dt.tz_localize('UTC')
                 else:
                     df['timestamp'] = df['timestamp'].dt.tz_convert('UTC')
-            
+
             # Insert data
             df.to_sql(
-                table_name, 
-                self.engine, 
-                if_exists=if_exists, 
+                table_name,
+                self.engine,
+                if_exists=if_exists,
                 index=False,
                 method='multi'
             )
-            
+
             self.logger.info(f"Inserted {len(df)} rows into {table_name}")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to insert data into {table_name}: {e}")
             return False
@@ -227,21 +228,21 @@ class TimeSeriesDB:
     def query_ohlcv_data(
         self,
         symbol: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         table_name: str = "ohlcv_data",
-        limit: Optional[int] = None
+        limit: int | None = None
     ) -> pd.DataFrame:
         """
         Query OHLCV data from TimescaleDB. Uses parameters to prevent SQL injection.
-        
+
         Args:
             symbol: Trading symbol (e.g., 'BTCUSDT').
             start_time: Start timestamp (optional).
             end_time: End timestamp (optional).
             table_name: Source table name.
             limit: Maximum number of rows to return.
-            
+
         Returns:
             pd.DataFrame: Query results.
         """
@@ -249,16 +250,16 @@ class TimeSeriesDB:
             # Build WHERE clause
             where_conditions = ["symbol = :symbol"]
             params = {"symbol": symbol}
-            
+
             if start_time:
                 where_conditions.append("timestamp >= :start_time")
                 params["start_time"] = start_time
             if end_time:
                 where_conditions.append("timestamp <= :end_time")
                 params["end_time"] = end_time
-            
+
             where_clause = " AND ".join(where_conditions)
-            
+
             # Build query
             query = f"""
             SELECT timestamp, symbol, open, high, low, close, volume,
@@ -267,33 +268,33 @@ class TimeSeriesDB:
             WHERE {where_clause}
             ORDER BY timestamp DESC
             """
-            
+
             if limit:
                 query += f" LIMIT {limit}"
-            
+
             # Execute query
             df = pd.read_sql(text(query), self.engine, params=params)
-            
+
             # Convert timestamp to datetime with timezone
             if 'timestamp' in df.columns:
                 df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
-            
+
             self.logger.info(f"Retrieved {len(df)} rows for {symbol}")
             return df
-            
+
         except Exception as e:
             self.logger.error(f"Failed to query data for {symbol}: {e}")
             return pd.DataFrame()
 
-    def get_latest_timestamp(self, symbol: str, table_name: str = "ohlcv_data") -> Optional[datetime]:
+    def get_latest_timestamp(self, symbol: str, table_name: str = "ohlcv_data") -> datetime | None:
         """
         Get the latest timestamp for a specific symbol.
         Uses parameters for safety.
-        
+
         Args:
             symbol: Trading symbol.
             table_name: Source table name.
-            
+
         Returns:
             datetime: Latest timestamp or None if no data.
         """
@@ -303,37 +304,37 @@ class TimeSeriesDB:
             FROM {table_name}
             WHERE symbol = :symbol
             """
-            
+
             with self.engine.connect() as conn:
                 result = conn.execute(text(query), {"symbol": symbol})
                 latest = result.fetchone()[0]
-                
+
             if latest:
                 self.logger.info(f"Latest timestamp for {symbol}: {latest}")
                 return latest
             else:
                 self.logger.info(f"No data found for {symbol}")
                 return None
-                
+
         except Exception as e:
             self.logger.error(f"Failed to get latest timestamp for {symbol}: {e}")
             return None
 
-    def get_symbol_stats(self, symbol: str, table_name: str = "ohlcv_data") -> Dict:
+    def get_symbol_stats(self, symbol: str, table_name: str = "ohlcv_data") -> dict:
         """
         Get basic statistics for a symbol.
         Uses parameters for safety.
-        
+
         Args:
             symbol: Trading symbol.
             table_name: Source table name.
-            
+
         Returns:
             dict: Statistics including count, date range, etc.
         """
         try:
             query = f"""
-            SELECT 
+            SELECT
                 COUNT(*) as record_count,
                 MIN(timestamp) as first_timestamp,
                 MAX(timestamp) as last_timestamp,
@@ -344,11 +345,11 @@ class TimeSeriesDB:
             FROM {table_name}
             WHERE symbol = :symbol
             """
-            
+
             with self.engine.connect() as conn:
                 result = conn.execute(text(query), {"symbol": symbol})
                 row = result.fetchone()
-                
+
             stats = {
                 'symbol': symbol,
                 'record_count': row[0],
@@ -359,10 +360,10 @@ class TimeSeriesDB:
                 'avg_price': float(row[5]) if row[5] else None,
                 'total_volume': float(row[6]) if row[6] else None
             }
-            
+
             self.logger.info(f"Retrieved stats for {symbol}: {stats['record_count']} records")
             return stats
-            
+
         except Exception as e:
             self.logger.error(f"Failed to get stats for {symbol}: {e}")
             return {}
@@ -412,15 +413,16 @@ class TimeSeriesDB:
 
 if __name__ == "__main__":
     import os
-    import pandas as pd
     from datetime import datetime
+
+    import pandas as pd
     from dotenv import load_dotenv
 
     # Cargar variables de entorno desde el archivo de configuración
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
                               'config', 'database.env')
     load_dotenv(config_path)
-    
+
     # Configuración desde variables de entorno
     db = TimeSeriesDB(
         host=os.getenv('DB_HOST', 'localhost'),
@@ -429,14 +431,14 @@ if __name__ == "__main__":
         username=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', 'password')
     )
-    
+
     # Test de conexión y operaciones
     if db.connect():
         print("✅ Conexión exitosa a PostgreSQL")
-        
+
         if db.create_ohlcv_hypertable():
             print("✅ Tabla OHLCV creada exitosamente")
-            
+
             # Crear datos de ejemplo
             df = pd.DataFrame({
                 'timestamp': [pd.Timestamp(datetime.now(), tz='UTC')],
@@ -451,21 +453,21 @@ if __name__ == "__main__":
                 'month': [datetime.now().month],
                 'year': [datetime.now().year]
             })
-            
+
             if db.insert_ohlcv_data(df):
                 print("✅ Datos de ejemplo insertados correctamente")
-                
+
                 # Consultar datos
                 result_df = db.query_ohlcv_data('BTCUSDT', limit=5)
                 if not result_df.empty:
                     print("\n📊 Últimos datos:")
                     print(result_df)
-                
+
                 stats = db.get_symbol_stats('BTCUSDT')
                 if stats:
                     print("\n📈 Estadísticas:")
                     for key, value in stats.items():
                         print(f"{key}: {value}")
-            
+
         db.close()
         print("\n✅ Conexión cerrada correctamente")

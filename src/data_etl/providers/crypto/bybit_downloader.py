@@ -1,10 +1,11 @@
-import pandas as pd
-import requests
-from datetime import datetime, timedelta
-import time
-from typing import Optional, List, Dict
 import logging
 import os
+import time
+from datetime import datetime, timedelta
+
+import pandas as pd
+import requests
+
 from data_etl.processing.enhanced_metadata_manager import EnhancedMetadataManager
 
 # Logging setup adaptado para Exodus v2025
@@ -39,7 +40,7 @@ class BybitDownloader:
 
     def get_kline_data(
         self, symbol: str, interval: str, start_time: int, limit: int = 1000
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Get kline data from Bybit
 
@@ -171,7 +172,7 @@ class BybitDownloader:
         # TODO: Store data in TimescaleDB (comentado hasta que tengamos tsdb_manager)
         # write_ohlcv_dataframe(df, symbol, interval)
 
-    def download_all_data(self, symbols: Optional[List[str]] = None, days_back: int = 30):
+    def download_all_data(self, symbols: list[str] | None = None, days_back: int = 30):
         """Download data for all symbols and timeframes"""
         if symbols:
             self.symbols = symbols

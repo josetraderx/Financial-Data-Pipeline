@@ -2,11 +2,14 @@
 Shared test configuration and fixtures.
 """
 
-import pytest
-import pandas as pd
 from datetime import datetime
+
+import pandas as pd
+import pytest
 import pytz
+
 from data_etl.pipelines.crypto_pipeline import CryptoPipeline
+
 
 @pytest.fixture
 def sample_ohlcv_data():

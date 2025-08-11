@@ -7,4 +7,4 @@ def get_config():
     """
     Placeholder for configuration loader. Extend as needed.
     """
-    return {} 
+    return {}

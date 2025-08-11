@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+
 from src.common.logger import get_logger, timed
 
 

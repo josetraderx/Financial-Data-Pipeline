@@ -2,12 +2,12 @@
 Tests for data validation module.
 """
 
-import pytest
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+import pytest
 import pytz
+
 from data_etl.validation.data_validator import DataValidator
+
 
 @pytest.fixture
 def validator():

@@ -2,11 +2,11 @@
 Utility for splitting data into training, validation, and test sets for ML pipelines.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Tuple, Optional
-from sklearn.model_selection import train_test_split
 import logging
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
@@ -27,25 +27,25 @@ class DataSplitter:
     create_sliding_windows(data, window_size, ...):
         Create sliding windows for time series data.
     """
-    
+
     def train_test_split(
         self,
         df: pd.DataFrame,
         test_size: float = 0.2,
         method: str = "chronological",
         timestamp_col: str = "timestamp",
-        random_state: Optional[int] = None
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        random_state: int | None = None
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Split data into train and test sets using specified method.
-        
+
         Args:
             df (pd.DataFrame): DataFrame to split
             test_size (float): Proportion for test set
             method (str): Split method ('chronological' or 'random')
             timestamp_col (str): Name of timestamp column for chronological split
             random_state (Optional[int]): Random seed for reproducibility
-            
+
         Returns:
             Tuple[pd.DataFrame, pd.DataFrame]: (train, test)
         """
@@ -59,7 +59,7 @@ class DataSplitter:
                 test = df_sorted.iloc[train_size:]
                 logger.info(f"Chronological split: {len(train)} train, {len(test)} test")
                 return train, test
-            
+
             elif method == "random":
                 # Random split
                 train, test = train_test_split(
@@ -67,15 +67,15 @@ class DataSplitter:
                 )
                 logger.info(f"Random split: {len(train)} train, {len(test)} test")
                 return train, test
-            
+
             else:
                 logger.error(f"Unknown split method: {method}")
                 return df, pd.DataFrame()
-                
+
         except Exception as e:
             logger.error(f"train_test_split failed: {e}")
             return df, pd.DataFrame()
-    
+
     def split_by_date(
         self,
         df: pd.DataFrame,
@@ -84,25 +84,25 @@ class DataSplitter:
     ) -> dict:
         """
         Split data by a specific date.
-        
+
         Args:
             df (pd.DataFrame): DataFrame to split
             split_date: Date to split on
             timestamp_col (str): Name of timestamp column
-            
+
         Returns:
             dict: Dictionary with 'before' and 'after' keys
         """
         try:
             if not pd.api.types.is_datetime64_any_dtype(df[timestamp_col]):
                 df[timestamp_col] = pd.to_datetime(df[timestamp_col])
-            
+
             before = df[df[timestamp_col] <= pd.to_datetime(split_date)]
             after = df[df[timestamp_col] > pd.to_datetime(split_date)]
-            
+
             logger.info(f"Date split: {len(before)} before, {len(after)} after {split_date}")
             return {'before': before, 'after': after}
-            
+
         except Exception as e:
             logger.error(f"split_by_date failed: {e}")
             return {'before': df, 'after': pd.DataFrame()}
@@ -112,8 +112,8 @@ class DataSplitter:
         test_size: float = 0.2,
         val_size: float = 0.2,
         shuffle: bool = True,
-        random_state: Optional[int] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        random_state: int | None = None,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Randomly split data into train, validation, and test sets.
 
@@ -151,7 +151,7 @@ class DataSplitter:
         train_ratio: float = 0.6,
         val_ratio: float = 0.2,
         timestamp_col: str = "timestamp",
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Chronologically split time series data into train, validation, and test sets.
 
@@ -182,9 +182,9 @@ class DataSplitter:
     def split_by_time(
         df: pd.DataFrame,
         train_end: str,
-        val_end: Optional[str] = None,
+        val_end: str | None = None,
         timestamp_col: str = "timestamp",
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Split data using specific date cutoffs.
 
@@ -216,7 +216,7 @@ class DataSplitter:
     @staticmethod
     def create_sliding_windows(
         data: np.ndarray, window_size: int, target_size: int = 1, stride: int = 1
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Create sliding windows for time series data.
 

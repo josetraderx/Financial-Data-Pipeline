@@ -2,12 +2,12 @@
 Tests for data validation and processing module.
 """
 
-import pytest
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+import pytest
 import pytz
+
 from data_etl.validation.data_processor import DataProcessor
+
 
 @pytest.fixture
 def processor():
@@ -57,7 +57,7 @@ def test_clean_outliers_zscore(processor, valid_data):
     outlier_data = valid_data.copy()
     outlier_data.loc[len(outlier_data)] = outlier_data.iloc[0]
     outlier_data.iloc[-1]['close'] = 50000.0  # Significant outlier
-    
+
     result = processor.clean_outliers(outlier_data, threshold=2.0, method='zscore')
     assert not pd.isna(result['close']).any()  # Should be filled
     assert result['close'].iloc[-1] != 50000.0  # Outlier should be replaced
@@ -68,7 +68,7 @@ def test_clean_outliers_iqr(processor, valid_data):
     outlier_data = valid_data.copy()
     outlier_data.loc[len(outlier_data)] = outlier_data.iloc[0]
     outlier_data.iloc[-1]['volume'] = 1000000.0  # Significant outlier
-    
+
     result = processor.clean_outliers(outlier_data, method='iqr')
     assert not pd.isna(result['volume']).any()  # Should be filled
     assert result['volume'].iloc[-1] != 1000000.0  # Outlier should be replaced
@@ -80,13 +80,13 @@ def test_validate_and_clean_pipelines(processor, valid_data):
     test_data.loc[len(test_data)] = test_data.iloc[0]
     test_data.iloc[-1]['close'] = 50000.0  # Outlier
     test_data.iloc[-1]['volume'] = -100.0  # Invalid volume
-    
+
     result = processor.validate_and_clean(
         test_data,
         clean_outliers=True,
         outlier_threshold=2.0
     )
-    
+
     assert not result.empty
     assert result.shape[0] <= test_data.shape[0]  # Invalid rows might be removed
     assert all(result['volume'] >= 0)  # No negative volumes

@@ -1,7 +1,8 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from data_etl.processing.data_splitter import DataSplitter
+
 
 def make_sample_df(n=100):
     dates = pd.date_range(start='2023-01-01', periods=n, freq='D')
@@ -37,4 +38,4 @@ def test_create_sliding_windows():
     X, y = DataSplitter.create_sliding_windows(arr, window_size=5, target_size=2, stride=1)
     assert X.shape[0] == y.shape[0]
     assert X.shape[1] == 5
-    assert y.shape[1] == 2 
+    assert y.shape[1] == 2

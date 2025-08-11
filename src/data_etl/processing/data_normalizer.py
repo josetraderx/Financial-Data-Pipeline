@@ -2,9 +2,10 @@
 Data normalization module for preprocessing market data.
 """
 
-import pandas as pd
+
 import numpy as np
-from typing import Dict, Union, List
+import pandas as pd
+
 
 class DataNormalizer:
     """
@@ -19,7 +20,7 @@ class DataNormalizer:
         """
         Initialize the DataNormalizer.
         """
-        self.scalers: Dict[str, Dict[str, Union[float, np.ndarray]]] = {}
+        self.scalers: dict[str, dict[str, float | np.ndarray]] = {}
 
     def normalize_ohlcv(self, df: pd.DataFrame, method: str = 'zscore') -> pd.DataFrame:
         """
@@ -60,39 +61,39 @@ class DataNormalizer:
             for col in price_columns + ['volume']:
                 normalized_df[col] = np.log1p(df[col])
         return normalized_df
-    
+
     def denormalize_ohlcv(self, df: pd.DataFrame, method: str = 'zscore') -> pd.DataFrame:
         """
         Denormalize data back to original scale.
-        
+
         Args:
             df (pd.DataFrame): Normalized OHLCV data
             method (str): Normalization method used
-            
+
         Returns:
             pd.DataFrame: Denormalized OHLCV data
         """
         if not self.scalers and method != 'log':
             raise ValueError("No scaling parameters found. Did you normalize the data first?")
-            
+
         denormalized_df = df.copy()
-        
+
         if method == 'zscore':
             for col in df.columns:
                 if col in self.scalers:
                     mean = self.scalers[col]['mean']
                     std = self.scalers[col]['std']
                     denormalized_df[col] = (df[col] * std) + mean
-                    
+
         elif method == 'minmax':
             for col in df.columns:
                 if col in self.scalers:
                     min_val = self.scalers[col]['min']
                     max_val = self.scalers[col]['max']
                     denormalized_df[col] = df[col] * (max_val - min_val) + min_val
-                    
+
         else:  # log denormalization
             for col in df.columns:
                 denormalized_df[col] = np.expm1(df[col])
-                
+
         return denormalized_df

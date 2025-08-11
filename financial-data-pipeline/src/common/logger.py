@@ -4,6 +4,7 @@ import sys
 from contextlib import contextmanager
 from time import perf_counter
 
+
 def get_logger(name: str = "app", level: str = None) -> logging.Logger:
     logger = logging.getLogger(name)
     if logger.handlers:
